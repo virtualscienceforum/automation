@@ -1,0 +1,6 @@
+name = "vsf-worker"
+account_id = "874267e118f495104760b845c7f9e11f"
+type = "webpack"
+workers_dev = true
+route = ""
+zone_id = ""
