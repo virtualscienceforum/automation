@@ -1,11 +1,17 @@
-const MAILGUN = "https://api.eu.mailgun.net/v3"
+const MAILGUN_API_URL = "https://api.eu.mailgun.net/v3"
 const USER = 'api';
 const LIST = 'temporary_test_list'
 const DOMAIN = 'mail.virtualscienceforum.org'
-const KEY = "???"
+const ADD_MEMBER_URL = MAILGUN_API_URL + '/lists/' + LIST + '@' + DOMAIN + '/members'
+const GET_LISTS_URL = MAILGUN_API_URL + '/lists/pages'
 
-const URL = MAILGUN + '/lists/' + LIST + '@' + DOMAIN + '/members.json'
-const base64encodedData = Buffer.from(USER + ':' + KEY).toString('base64');
+const base64encodedData = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
+
+// Method to convert a dictionary
+const urlfy = obj =>
+  Object.keys(obj)
+    .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(obj[k]))
+    .join("&");
 
 const testForm = `
   <!DOCTYPE html>
@@ -30,7 +36,7 @@ const testForm = `
   </html>
   `
 
-function rawHtmlResponse(html) {
+function respondWithRawHTML(html) {
   const init = {
     headers: {
       "content-type": "text/html;charset=UTF-8",
@@ -39,11 +45,10 @@ function rawHtmlResponse(html) {
   return new Response(html, init)
 }
 
-
-
 async function gatherResponse(response) {
   const { headers } = response
   const contentType = headers.get("content-type") || ""
+
   if (contentType.includes("application/json")) {
     return JSON.stringify(await response.json())
   }
@@ -60,35 +65,29 @@ async function gatherResponse(response) {
 
 async function handleRequest(request) {
   const formData = await request.formData()
-  const body = {}
+  const bodydata = {}
   for (const entry of formData.entries()) {
-    body[entry[0]] = entry[1]
+    bodydata[entry[0]] = entry[1]
   }
 
-  console.log(body)
-
-  var members = []
-  members.push(body)
-
-  const init = {
-    // body: {
-    //   'subscribed':true,
-    //   'address':body.address,
-    //   'name':body.name
-    // },
-    body: JSON.stringify(members),
+  let bodyoptions = {
     method: "POST",
     headers: {
-      //"content-type": "text/html;charset=UTF-8",
-      "content-type": "application/json;charset=UTF-8",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Length": bodydata.length,
       'Authorization': 'Basic ' + base64encodedData,
     },
+    body: urlfy(bodydata),
   }
 
-  console.log(init)
-
-  const response = await fetch(URL, init)
+  const response = await fetch(ADD_MEMBER_URL, bodyoptions)
   const results = await gatherResponse(response)
+
+  let init = {
+    headers: {
+      "Content-Type": "text/html;charset=UTF-8",
+    },
+  }
   return new Response(results, init)
 }
 
@@ -101,18 +100,19 @@ async function askForLists(request) {
     },
   }
 
-  const p = MAILGUN + '/lists/pages'
-  const response = await fetch(p, init)
+  const response = await fetch(GET_LISTS_URL, init)
   const results = await gatherResponse(response)
   return new Response(results, init)
 }
 
 addEventListener("fetch", event => {
+  // Extract the request from the event
   const { request } = event
+  // Extract the url from the request
   const { url } = request
 
   if (url.includes("add")) {
-      return event.respondWith(rawHtmlResponse(testForm))
+      return event.respondWith(respondWithRawHTML(testForm))
   }
 
   if (url.includes("lists")) {
@@ -123,6 +123,6 @@ addEventListener("fetch", event => {
     return event.respondWith(handleRequest(request))
   }
   else {
-    return event.respondWith(new Response(`Expecting a POST request`))
+    return event.respondWith(new Response(`Expecting a POST request, or visit /add or /lists`))
   }
 })
