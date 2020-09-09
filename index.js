@@ -4,7 +4,7 @@ const LIST = 'temporary_test_list'
 const DOMAIN = 'mail.virtualscienceforum.org'
 const KEY = "???"
 
-const URL = MAILGUN + '/lists/' + LIST + '@' + DOMAIN + '/members'
+const URL = MAILGUN + '/lists/' + LIST + '@' + DOMAIN + '/members.json'
 const base64encodedData = Buffer.from(USER + ':' + KEY).toString('base64');
 
 const testForm = `
@@ -67,17 +67,20 @@ async function handleRequest(request) {
 
   console.log(body)
 
+  var members = []
+  members.push(body)
+
   const init = {
-    body: {
-      'subscribed':true,
-      'address':body.address,
-      'name':body.name
-    },
-    // body: JSON.stringify(body)
+    // body: {
+    //   'subscribed':true,
+    //   'address':body.address,
+    //   'name':body.name
+    // },
+    body: JSON.stringify(members),
     method: "POST",
     headers: {
-      "content-type": "text/html;charset=UTF-8",
-      //"content-type": "application/json;charset=UTF-8",
+      //"content-type": "text/html;charset=UTF-8",
+      "content-type": "application/json;charset=UTF-8",
       'Authorization': 'Basic ' + base64encodedData,
     },
   }
@@ -123,4 +126,3 @@ addEventListener("fetch", event => {
     return event.respondWith(new Response(`Expecting a POST request`))
   }
 })
-
