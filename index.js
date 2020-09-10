@@ -4,6 +4,7 @@ const LIST = 'temporary_test_list'
 const DOMAIN = 'mail.virtualscienceforum.org'
 const ADD_MEMBER_URL = MAILGUN_API_URL + '/lists/' + LIST + '@' + DOMAIN + '/members'
 const GET_LISTS_URL = MAILGUN_API_URL + '/lists/pages'
+const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
 
 const base64encodedData = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
@@ -32,6 +33,19 @@ const testForm = `
       <button>Sign me up!</button>
     </div>
   </form>
+  </body>
+  </html>
+  `
+
+const welcomeEmail = `
+  <!DOCTYPE html>
+  <html>
+  <body>
+  <h1>Welcome to the mailing list</h1>
+  <p>Dear participant,</p>
+  <p>Thank you for signing up</p>
+  <p>Yours,</p>
+  <p>VSF</p>
   </body>
   </html>
   `
@@ -70,6 +84,9 @@ async function handleRequest(request) {
     bodydata[entry[0]] = entry[1]
   }
 
+  // Toggle subscribed
+  bodydata['subscribed'] = true
+
   let bodyoptions = {
     method: "POST",
     headers: {
@@ -81,18 +98,62 @@ async function handleRequest(request) {
   }
 
   const response = await fetch(ADD_MEMBER_URL, bodyoptions)
-  const results = await gatherResponse(response)
+  var jsonresponse = await response.json()
+
+  if( response.status === 200 ) {
+    console.log("Sending confirmation email")
+    console.log("Respond with alert")
+    await sendConfirmationEmail(bodydata.address, bodydata.name)
+  } else {
+    console.log("Respond w/ returned error message")
+    console.log(jsonresponse.message)
+  }
 
   let init = {
     headers: {
       "Content-Type": "text/html;charset=UTF-8",
     },
   }
-  return new Response(results, init)
+  return new Response(JSON.stringify(jsonresponse), init)
+}
+
+async function sendConfirmationEmail(address, name) {
+
+  let bodydata = {
+    from: "mail@virtualscienceforum.org",
+    to: address,
+    subject: "Welcome to the mailing list " + name,
+    html: welcomeEmail,
+  }
+
+  let bodyoptions = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Length": bodydata.length,
+      'Authorization': 'Basic ' + base64encodedData,
+    },
+    body: urlfy(bodydata),
+  }
+
+  const response = await fetch(SEND_MAIL_URL, bodyoptions)
+
+  if( response.status === 200 ) {
+    console.log("Confirmation email sent!")
+  } else {
+    console.log("Respond w/ returned error message")
+  }
+
+  let init = {
+    headers: {
+      "Content-Type": "text/html;charset=UTF-8",
+    },
+  }
+  return new Response(response, init)
 }
 
 async function askForLists(request) {
-  const init = {
+  const bodydata = {
     method: "GET",
     headers: {
       "content-type": "application/json;charset=UTF-8",
@@ -100,8 +161,14 @@ async function askForLists(request) {
     },
   }
 
-  const response = await fetch(GET_LISTS_URL, init)
+  const response = await fetch(GET_LISTS_URL, bodydata)
   const results = await gatherResponse(response)
+
+  let init = {
+    headers: {
+      "Content-Type": "text/html;charset=UTF-8",
+    },
+  }
   return new Response(results, init)
 }
 
