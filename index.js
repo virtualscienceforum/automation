@@ -6,11 +6,7 @@ const ADD_MEMBER_URL = MAILGUN_API_URL + '/lists/' + LIST + '@' + DOMAIN + '/mem
 const GET_LISTS_URL = MAILGUN_API_URL + '/lists/pages'
 const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
 
-const MAILGUN_API_KEY = "..."
-const RECAPTCHASITEKEY = "..."
-const RECAPTCHASECRET = "..."
-
-const base64encodedData = Buffer.from(USER + ':' + MAILGUN_API_KEY).toString('base64');
+const base64encodedData = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
 // Method to convert a dictionary
 const urlfy = obj =>
@@ -159,14 +155,14 @@ async function gatherResponse(response) {
 }
 
 // Validate the entries in the form
-function validateFormData(body)
+function validateFormData(bodydata)
 {
-  if (!body) return false
-  if (!body.name) return false
+  if (!bodydata) return false
+  if (!bodydata.name) return false
 
   // Taken from http://emailregex.com/
   const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  if (!body.address || !emailRegex.test(body.address)) return false
+  if (!bodydata.address || !emailRegex.test(bodydata.address)) return false
 
   return true
 }
@@ -181,13 +177,19 @@ async function handleRequest(request) {
     // Validate the origin of the request
     if( request.method === 'POST' ) // && request.url.hostname === '...' && request.url.pathname === '/add')
     {
+      const formData = await request.formData()
+      const bodydata = {}
+      for (const entry of formData.entries()) {
+        bodydata[entry[0]] = entry[1]
+      }
+
       // Validate the submitted data
-      if (!validateFormData(request.body)) {
+      if (!validateFormData(bodydata)) {
         return new Response('Invalid submission', { status: 400 })
       }
 
       // Extract the recaptcha token
-      const recaptchaToken = event.request.headers.get('g-recaptcha')
+      const recaptchaToken = bodydata['g-recaptcha-response']
       if (!recaptchaToken) {
         return new Response('Invalid reCAPTCHA', { status: 400 })
       }
@@ -203,11 +205,7 @@ async function handleRequest(request) {
       }
 
       // At this point, we passed the captcha and we have valid entries
-      const formData = await request.formData()
-      const bodydata = {}
-      for (const entry of formData.entries()) {
-        bodydata[entry[0]] = entry[1]
-      }
+
 
       // Toggle subscribed
       bodydata['subscribed'] = true
