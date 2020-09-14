@@ -8,111 +8,17 @@ const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
 
 const base64encodedData = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+}
+
 // Method to convert a dictionary
 const urlfy = obj =>
   Object.keys(obj)
     .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(obj[k]))
     .join("&");
-
-const testForm = `
-<!DOCTYPE html>
-<head>
-<script src='https://www.google.com/recaptcha/api.js'></script>
-</head>
-<html>
-<style>
-body {font-family: Arial, Helvetica, sans-serif;}
-* {box-sizing: border-box}
-
-/* Full-width input fields */
-input[type=text] {
-  width: 100%;
-  padding: 15px;
-  margin: 5px 0 22px 0;
-  display: inline-block;
-  border: none;
-  background: #f1f1f1;
-}
-
-input[type=text]:focus {
-  background-color: #ddd;
-  outline: none;
-}
-
-hr {
-  border: 1px solid #f1f1f1;
-  margin-bottom: 25px;
-}
-
-/* Set a style for all buttons */
-button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 14px 20px;
-  margin: 8px 0;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  opacity: 0.9;
-}
-
-button:hover {
-  opacity:1;
-}
-
-/* Float signup button and add an equal width */
-.signupbtn {
-  float: left;
-  width: 50%;
-}
-
-/* Add padding to container elements */
-.container {
-  padding: 16px;
-}
-
-/* Clear floats */
-.clearfix::after {
-  content: "";
-  clear: both;
-  display: table;
-}
-
-/* Change styles for cancel button and signup button on extra small screens */
-@media screen and (max-width: 300px) {
-  .cancelbtn, .signupbtn {
-     width: 100%;
-  }
-}
-</style>
-<body>
-
-<form action="/" method="post", style="border:1px solid #ccc">
-  <div class="container">
-    <h1>Sign Up</h1>
-    <p>Please fill in this form to sign up for the mailing list.</p>
-    <hr>
-
-    <label for="name"><b>Name</b></label>
-    <input type="text" placeholder="Enter your name" name="name" id="name" required>
-
-    <label for="address"><b>Email</b></label>
-    <input type="text" placeholder="Enter your Email" name="address" id="address" required>
-
-    <label>
-      <input type="checkbox" checked="unchecked" name="consent" style="margin-bottom:15px"> I agree to the <a href="#" style="color:dodgerblue">terms</a>
-    </label>
-
-    <div class="clearfix">
-      <button type="submit" class="signupbtn">Sign Up</button>
-    </div>
-  </div>
-  <div class="g-recaptcha" data-sitekey="${RECAPTCHASITEKEY}"></div>
-</form>
-
-</body>
-</html>
-`
 
 const welcomeEmail = `
   <!DOCTYPE html>
@@ -126,15 +32,6 @@ const welcomeEmail = `
   </body>
   </html>
   `
-
-function respondWithRawHTML(html) {
-  const init = {
-    headers: {
-      "content-type": "text/html;charset=UTF-8",
-    },
-  }
-  return new Response(html, init)
-}
 
 async function gatherResponse(response) {
   const { headers } = response
@@ -185,13 +82,13 @@ async function handleRequest(request) {
 
       // Validate the submitted data
       if (!validateFormData(bodydata)) {
-        return new Response('Invalid submission', { status: 400 })
+        return new Response('Invalid submission', { status: 400, headers:corsHeaders })
       }
 
       // Extract the recaptcha token
       const recaptchaToken = bodydata['g-recaptcha-response']
       if (!recaptchaToken) {
-        return new Response('Invalid reCAPTCHA', { status: 400 })
+        return new Response('Invalid reCAPTCHA', { status: 400, headers:corsHeaders })
       }
 
       const recaptchaResponse = await fetch(
@@ -201,7 +98,7 @@ async function handleRequest(request) {
 
       const recaptchaBody = await recaptchaResponse.json()
       if (recaptchaBody.success == false) {
-        return new Response('reCAPTCHA failed', { status: 400 })
+        return new Response('reCAPTCHA failed', { status: 400, headers:corsHeaders })
       }
 
       // At this point, we passed the captcha and we have valid entries
@@ -231,8 +128,12 @@ async function handleRequest(request) {
       }
 
       let init = {
+        status: 204,
         headers: {
           "Content-Type": "text/html;charset=UTF-8",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
         },
       }
       return new Response("results", init)
@@ -241,7 +142,7 @@ async function handleRequest(request) {
   catch (err)
   {
     console.error(err)
-    return new Response(err.stack, { status: 500 })
+    return new Response(err.stack, { status: 500, headers:corsHeaders })
   }
 }
 
@@ -282,24 +183,30 @@ async function sendConfirmationEmail(address, name) {
   return new Response("results", init)
 }
 
-async function askForLists(request) {
-  const bodydata = {
-    method: "GET",
-    headers: {
-      "content-type": "application/json;charset=UTF-8",
-      'Authorization': 'Basic ' + base64encodedData
-    },
+function handleOptions(request) {
+  // Make sure the necessary headers are present
+  // for this to be a valid pre-flight request
+  if(
+    request.headers.get("Origin") !== null &&
+    request.headers.get("Access-Control-Request-Method") !== null &&
+    request.headers.get("Access-Control-Request-Headers") !== null
+  ){
+    // Handle CORS pre-flight request.
+    // If you want to check the requested method + headers
+    // you can do that here.
+    return new Response(null, {
+      headers: corsHeaders,
+    })
   }
-
-  const response = await fetch(GET_LISTS_URL, bodydata)
-  const results = await gatherResponse(response)
-
-  let init = {
-    headers: {
-      "Content-Type": "text/html;charset=UTF-8",
-    },
+  else {
+    // Handle standard OPTIONS request.
+    // If you want to allow other HTTP Methods, you can do that here.
+    return new Response(null, {
+      headers: {
+        Allow: "GET, HEAD, POST, OPTIONS",
+      },
+    })
   }
-  return new Response(results, init)
 }
 
 addEventListener("fetch", event => {
@@ -308,18 +215,14 @@ addEventListener("fetch", event => {
   // Extract the url from the request
   const { url } = request
 
-  if (url.includes("add")) {
-      return event.respondWith(respondWithRawHTML(testForm))
+  if (request.method === "OPTIONS") {
+      // Handle CORS preflight requests
+      event.respondWith(handleOptions(request))
   }
-
-  if (url.includes("lists")) {
-      return event.respondWith(askForLists(request))
-  }
-
-  if (request.method === "POST") {
+  else if (request.method === "POST") {
     return event.respondWith(handleRequest(request))
   }
   else {
-    return event.respondWith(new Response(`Expecting a POST request, or visit /add or /lists`))
+    return event.respondWith(new Response(`Expecting a POST request`))
   }
 })
