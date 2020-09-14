@@ -76,9 +76,18 @@ async function handleRequest(request) {
     {
       const formData = await request.formData()
       const bodydata = {}
+      const listsToSubscribeTo = [] // Empty array to hold all the email lists to sign up to
       for (const entry of formData.entries()) {
         bodydata[entry[0]] = entry[1]
+
+        // Add the requested email lists to the array
+        if( entry[0] === "signup-checkbox" ) {
+          listsToSubscribeTo.push(entry[1]);
+        }
+
       }
+      // Toggle subscribed
+      bodydata['subscribed'] = true
 
       // Validate the submitted data
       if (!validateFormData(bodydata)) {
@@ -102,11 +111,6 @@ async function handleRequest(request) {
       }
 
       // At this point, we passed the captcha and we have valid entries
-
-
-      // Toggle subscribed
-      bodydata['subscribed'] = true
-
       let bodyoptions = {
         method: "POST",
         headers: {
@@ -117,15 +121,18 @@ async function handleRequest(request) {
         body: urlfy(bodydata),
       }
 
-      const response = await fetch(ADD_MEMBER_URL, bodyoptions)
-      var jsonresponse = await response.json()
+      for( var i = 0; i < listsToSubscribeTo.length; i++ ) {
+        console.log("Subscribing to " + listsToSubscribeTo[i]);
+        var addMemberURL = MAILGUN_API_URL + '/lists/' + listsToSubscribeTo[i] + '@' + DOMAIN + '/members'
+        const response = await fetch(addMemberURL, bodyoptions)
 
-      if( response.status === 200 ) {
-        console.log("Sending confirmation email")
-        await sendConfirmationEmail(bodydata.address, bodydata.name)
-      } else {
-        console.log(jsonresponse.message)
+        if( response.status != 200 ) {
+          return new Response("Error while signing up for " + listsToSubscribeTo[i], {status:response.status, headers:corsHeaders})
+        }
       }
+
+      // If we get here, we managed to sign up for the lists
+      await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
 
       let init = {
         status: 204,
@@ -146,7 +153,7 @@ async function handleRequest(request) {
   }
 }
 
-async function sendConfirmationEmail(address, name) {
+async function sendConfirmationEmail(address, name, lists) {
 
   let bodydata = {
     from: "mail@virtualscienceforum.org",
@@ -214,7 +221,7 @@ addEventListener("fetch", event => {
   const { request } = event
   // Extract the url from the request
   const { url } = request
-
+  
   if (request.method === "OPTIONS") {
       // Handle CORS preflight requests
       event.respondWith(handleOptions(request))
