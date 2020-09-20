@@ -9,7 +9,7 @@ const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
 const base64encodedData = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://www.virtualscienceforum.org",
+  "Access-Control-Allow-Origin": "https://virtualscienceforum.org",
   "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 }
