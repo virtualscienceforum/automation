@@ -127,7 +127,7 @@ async function handleRequest(request) {
         
         // If we get here, we managed to sign up for the lists
         const sendmailresponse = await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
-        return new Response(null, {status:204, headers:corsHeaders})
+        return new Response("Successfully signed up for the mailing lists", {status:200, headers:corsHeaders})
       }
     }
   }
