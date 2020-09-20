@@ -124,11 +124,11 @@ async function handleRequest(request) {
         if( response.status != 200 ) {
           return new Response("Error while signing up for " + listsToSubscribeTo[i], {status:response.status, headers:corsHeaders})
         }
+        
+        // If we get here, we managed to sign up for the lists
+        await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
+        return new Response("results", {status:204, headers:corsHeaders})
       }
-
-      // If we get here, we managed to sign up for the lists
-      await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
-      return new Response("results", {status:204, headers:corsHeaders})
     }
   }
   catch (err)
