@@ -33,24 +33,6 @@ const welcomeEmail = `
   </html>
   `
 
-async function gatherResponse(response) {
-  const { headers } = response
-  const contentType = headers.get("content-type") || ""
-
-  if (contentType.includes("application/json")) {
-    return JSON.stringify(await response.json())
-  }
-  else if (contentType.includes("application/text")) {
-    return await response.text()
-  }
-  else if (contentType.includes("text/html")) {
-    return await response.text()
-  }
-  else {
-    return await response.text()
-  }
-}
-
 // Validate the entries in the form
 function validateFormData(bodydata)
 {
@@ -74,8 +56,6 @@ async function handleRequest(request) {
     // Validate the origin of the request
     if( request.method === 'POST' ) // && request.url.hostname === '...' && request.url.pathname === '/add')
     {
-      console.log("handling");
-
       const formData = await request.formData()
       const bodydata = {}
       const listsToSubscribeTo = [] // Empty array to hold all the email lists to sign up to
@@ -135,7 +115,7 @@ async function handleRequest(request) {
             mailgunListName = "speakers_corner"
             break;
           default:
-            return new Response(`${mailgunListName} cannot be subscribed to via this URL`, {status:403, headers:corsHeaders})
+            return new Response(listsToSubscribeTo[i] + "cannot be subscribed to via this URL", {status:403, headers:corsHeaders})
         }
 
         var addMemberURL = MAILGUN_API_URL + '/lists/' + mailgunListName + '@' + DOMAIN + '/members'
