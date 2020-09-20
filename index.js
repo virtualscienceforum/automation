@@ -90,6 +90,8 @@ async function handleRequest(request) {
 
       // Toggle subscribed
       bodydata['subscribed'] = true
+      // Update user if present
+      bodydata['upsert'] = true      
 
       // Validate the submitted data
       if (!validateFormData(bodydata)) {
@@ -133,7 +135,7 @@ async function handleRequest(request) {
             mailgunListName = "speakers_corner"
             break;
           default:
-            return new Response("One of the lists cannot be subscribed to via this URL", {status:418, headers:corsHeaders})
+            return new Response("${mailgunListName} cannot be subscribed to via this URL", {status:403, headers:corsHeaders})
         }
 
         var addMemberURL = MAILGUN_API_URL + '/lists/' + mailgunListName + '@' + DOMAIN + '/members'
