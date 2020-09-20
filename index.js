@@ -166,9 +166,9 @@ async function sendConfirmationEmail(address, name, lists) {
   var mailBody = mailBody.replace("THANKYOUMSG", thankYouMsg)
 
   let bodydata = {
-    from: "mail@virtualscienceforum.org",
+    from: "VSF mailing lists <mail@virtualscienceforum.org>",
     to: address,
-    subject: "Welcome to the VSF",
+    subject: "You have signed up for a VSF mailing list",
     html: mailBody,
   }
 
