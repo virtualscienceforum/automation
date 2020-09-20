@@ -152,8 +152,8 @@ async function sendConfirmationEmail(address, name, lists) {
 
   // Update the template
   var thankYouMsg = "Thank you for signing up for ";
-  for( var i = 0; i < listsToSubscribeTo.length; i++ ) {
-    thankYouMsg += "the " + getListName(listsToSubscribeTo[i]);
+  for( var i = 0; i < lists.length; i++ ) {
+    thankYouMsg += "the " + getListName(lists[i]);
 
     if( i == listsToSubscribeTo.length - 2 ) {
       thankYouMsg += " and "
