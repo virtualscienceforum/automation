@@ -135,7 +135,7 @@ async function handleRequest(request) {
             mailgunListName = "speakers_corner"
             break;
           default:
-            return new Response("${mailgunListName} cannot be subscribed to via this URL", {status:403, headers:corsHeaders})
+            return new Response(`${mailgunListName} cannot be subscribed to via this URL`, {status:403, headers:corsHeaders})
         }
 
         var addMemberURL = MAILGUN_API_URL + '/lists/' + mailgunListName + '@' + DOMAIN + '/members'
