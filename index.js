@@ -155,7 +155,7 @@ async function sendConfirmationEmail(address, name, lists) {
   for( var i = 0; i < lists.length; i++ ) {
     thankYouMsg += "the " + getListName(lists[i]);
 
-    if( i == listsToSubscribeTo.length - 2 ) {
+    if( i == lists.length - 2 ) {
       thankYouMsg += " and "
     } else if ( i != 0 ) {
       thankYouMsg += ", "
