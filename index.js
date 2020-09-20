@@ -9,7 +9,7 @@ const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
 const base64encodedData = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://www.virtualscienceforum.org",
   "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 }
@@ -25,9 +25,9 @@ const welcomeEmail = `
   <html>
   <body>
   <h1>Welcome to the mailing list</h1>
-  <p>Dear participant,</p>
-  <p>Thank you for signing up</p>
-  <p>Yours,</p>
+  <p>Dear NAME,</p>
+  <p>THANKYOUMSG</p>
+  <p>Kind regards,</p>
   <p>VSF</p>
   </body>
   </html>
@@ -74,6 +74,8 @@ async function handleRequest(request) {
     // Validate the origin of the request
     if( request.method === 'POST' ) // && request.url.hostname === '...' && request.url.pathname === '/add')
     {
+      console.log("handling");
+
       const formData = await request.formData()
       const bodydata = {}
       const listsToSubscribeTo = [] // Empty array to hold all the email lists to sign up to
@@ -84,8 +86,8 @@ async function handleRequest(request) {
         if( entry[0] === "signup-checkbox" ) {
           listsToSubscribeTo.push(entry[1]);
         }
-
       }
+
       // Toggle subscribed
       bodydata['subscribed'] = true
 
@@ -103,7 +105,7 @@ async function handleRequest(request) {
       const recaptchaResponse = await fetch(
         `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHASECRET}&response=${recaptchaToken}`, {
           method: 'POST'
-        })
+      })
 
       const recaptchaBody = await recaptchaResponse.json()
       if (recaptchaBody.success == false) {
@@ -122,8 +124,19 @@ async function handleRequest(request) {
       }
 
       for( var i = 0; i < listsToSubscribeTo.length; i++ ) {
-        console.log("Subscribing to " + listsToSubscribeTo[i]);
-        var addMemberURL = MAILGUN_API_URL + '/lists/' + listsToSubscribeTo[i] + '@' + DOMAIN + '/members'
+        var mailgunListName = "";
+        switch( listsToSubscribeTo[i] ) {
+          case "signup-general":
+            mailgunListName = "vsf-announce"
+            break;
+          case "signup-speakerscorner":
+            mailgunListName = "speakers_corner"
+            break;
+          default:
+            return new Response("One of the lists cannot be subscribed to via this URL", {status:418, headers:corsHeaders})
+        }
+
+        var addMemberURL = MAILGUN_API_URL + '/lists/' + mailgunListName + '@' + DOMAIN + '/members'
         const response = await fetch(addMemberURL, bodyoptions)
 
         if( response.status != 200 ) {
@@ -133,17 +146,7 @@ async function handleRequest(request) {
 
       // If we get here, we managed to sign up for the lists
       await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
-
-      let init = {
-        status: 204,
-        headers: {
-          "Content-Type": "text/html;charset=UTF-8",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      }
-      return new Response("results", init)
+      return new Response("results", {status:204, headers:corsHeaders})
     }
   }
   catch (err)
@@ -153,13 +156,38 @@ async function handleRequest(request) {
   }
 }
 
+function getListName(list)
+{
+  switch( list ) {
+    case "signup-general":
+      return "General announcement mailing list"
+    case "signup-speakerscorner":
+      return "Speaker\'s corner mailing list"
+  }
+}
+
 async function sendConfirmationEmail(address, name, lists) {
+
+  // Update the template
+  var thankYouMsg = "Thank you for signing up for ";
+  for( var i = 0; i < listsToSubscribeTo.length; i++ ) {
+    thankYouMsg += "the " + getListName(listsToSubscribeTo[i]);
+
+    if( i == listsToSubscribeTo.length - 2 ) {
+      thankYouMsg += " and "
+    } else if ( i != 0 ) {
+      thankYouMsg += ", "
+    }
+  }
+
+  var mailBody = welcomeEmail.replace("NAME", name)
+  var mailBody = mailBody.replace("THANKYOUMSG", thankYouMsg)
 
   let bodydata = {
     from: "mail@virtualscienceforum.org",
     to: address,
-    subject: "Welcome to the mailing list " + name,
-    html: welcomeEmail,
+    subject: "Welcome to the VSF",
+    html: mailBody,
   }
 
   let bodyoptions = {
@@ -173,47 +201,10 @@ async function sendConfirmationEmail(address, name, lists) {
   }
 
   const response = await fetch(SEND_MAIL_URL, bodyoptions)
-
-  console.log(response)
-
-  if( response.status === 200 ) {
-    console.log("Confirmation email sent!")
-  } else {
-    console.log("Respond w/ returned error message")
+  if( response.status != 200 ) {
+    return new Response("Error while sending the confirmation email", {status:response.status, headers:corsHeaders})
   }
-
-  let init = {
-    headers: {
-      "Content-Type": "text/html;charset=UTF-8",
-    },
-  }
-  return new Response("results", init)
-}
-
-function handleOptions(request) {
-  // Make sure the necessary headers are present
-  // for this to be a valid pre-flight request
-  if(
-    request.headers.get("Origin") !== null &&
-    request.headers.get("Access-Control-Request-Method") !== null &&
-    request.headers.get("Access-Control-Request-Headers") !== null
-  ){
-    // Handle CORS pre-flight request.
-    // If you want to check the requested method + headers
-    // you can do that here.
-    return new Response(null, {
-      headers: corsHeaders,
-    })
-  }
-  else {
-    // Handle standard OPTIONS request.
-    // If you want to allow other HTTP Methods, you can do that here.
-    return new Response(null, {
-      headers: {
-        Allow: "GET, HEAD, POST, OPTIONS",
-      },
-    })
-  }
+  return new Response("results", {status:200, headers:corsHeaders})
 }
 
 addEventListener("fetch", event => {
@@ -221,12 +212,8 @@ addEventListener("fetch", event => {
   const { request } = event
   // Extract the url from the request
   const { url } = request
-  
-  if (request.method === "OPTIONS") {
-      // Handle CORS preflight requests
-      event.respondWith(handleOptions(request))
-  }
-  else if (request.method === "POST") {
+
+  if (request.method === "POST") {
     return event.respondWith(handleRequest(request))
   }
   else {
