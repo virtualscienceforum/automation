@@ -126,7 +126,7 @@ async function handleRequest(request) {
         }
         
         // If we get here, we managed to sign up for the lists
-        await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
+        const sendmailresponse = await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
         return new Response(null, {status:204, headers:corsHeaders})
       }
     }
@@ -183,10 +183,7 @@ async function sendConfirmationEmail(address, name, lists) {
   }
 
   const response = await fetch(SEND_MAIL_URL, bodyoptions)
-  if( response.status != 200 ) {
-    return new Response("Error while sending the confirmation email", {status:response.status, headers:corsHeaders})
-  }
-  return new Response("results", {status:200, headers:corsHeaders})
+  return response
 }
 
 addEventListener("fetch", event => {
