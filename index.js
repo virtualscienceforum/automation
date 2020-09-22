@@ -124,14 +124,14 @@ async function handleRequest(request) {
         if( response.status != 200 ) {
           return new Response("Error while signing up for " + listsToSubscribeTo[i], {status:response.status, headers:corsHeaders})
         }
-        
-        // If we get here, we managed to sign up for the lists
-        const sendmailresponse = await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
-        if( sendmailresponse.status != 200 ) {
-          return new Response("You were signed up, but sending a confirmation email failed.", {status:sendmailresponse.status, headers:corsHeaders})
-        }
-        return new Response("Succesfully subscribed. You will receive a confirmation email.", {status:200, headers:corsHeaders})
       }
+      
+      // If we get here, we managed to sign up for the lists
+      const sendmailresponse = await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
+      if( sendmailresponse.status != 200 ) {
+        return new Response("You were signed up, but sending a confirmation email failed.", {status:sendmailresponse.status, headers:corsHeaders})
+      }
+      return new Response("Succesfully subscribed. You will receive a confirmation email.", {status:200, headers:corsHeaders})
     }
   }
   catch (err)
@@ -160,10 +160,11 @@ async function sendConfirmationEmail(address, name, lists) {
 
     if( i == lists.length - 2 ) {
       thankYouMsg += " and "
-    } else if ( i != 0 ) {
+    } else if ( i != 0 && i != lists.length - 1) {
       thankYouMsg += ", "
     }
   }
+  thankYouMsg += ".";
 
   var mailBody = welcomeEmail.replace("NAME", name)
   var mailBody = mailBody.replace("THANKYOUMSG", thankYouMsg)
