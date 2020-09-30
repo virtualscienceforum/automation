@@ -1,0 +1,13 @@
+name: Schedule Zoom Talks
+on:
+  repository_dispatch:
+    types: [schedule-zoom-talk]
+    
+jobs:
+  scheduleTalks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.client_payload.ref }}
+      - run: echo ${{ github.event.client_payload.sha }}
