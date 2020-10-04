@@ -25,7 +25,7 @@ def zoom_headers(duration: int=100) -> dict:
 def zoom_request(method: callable, *args, **kwargs):
     """A minimal wrapper around requests for querying zoom API with error handling"""
     response = method(*args, **kwargs, headers=zoom_headers())
-    if response.status_code != 204:
+    if response.status_code > 299:
         raise RuntimeError(response.content.decode())
 
     if response.content:
