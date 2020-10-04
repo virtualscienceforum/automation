@@ -65,28 +65,6 @@ def markdown_to_plain(text):
     return text.replace('[', '').replace(']', ' ').replace('  \n', '\n').replace('*', '')
 
 
-def authorize_at_zoom(client_id, client_secret):
-    port = 8878
-    redirect_url = f"http://lvh.me:{port}/redirect"
-    webbrowser.open(
-        f"https://zoom.us/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_url}"
-    )
-    server = HTTPServer(('', port), ClassAttributeStorageHandler)
-    server.handle_request()
-    server.socket.close()
-    auth_code = ClassAttributeStorageHandler.request_path[len('/redirect?code='):]
-
-    response = requests.post(
-        f"https://zoom.us/oauth/token?grant_type=authorization_code&code={auth_code}&redirect_uri={redirect_url}",
-        headers={
-            "Authorization": f"Basic {base64.b64encode(':'.join([client_id, client_secret]).encode()).decode()}"
-        },
-    )
-
-    oauth_token = response.json()['access_token']
-    return {"Authorization": f"Bearer {oauth_token}"}
-
-
 def registrants(meeting_id, headers):
     # TODO: properly support paging
     registrants = requests.get(
@@ -120,6 +98,8 @@ def send_to_registrants(
         "recipient-variables": json.dumps({i.email: {'join_url': i.join_url} for i in registrants.itertuples()}),
     }
     if when is not None:
+        if when < datetime.now(tz=pytz.timezone('Europe/Amsterdam')):
+            raise ValueError('Cannot schedule in the past')
         data['o:deliverytime'] = utils.format_datetime(when)
     return api_query(
         post,
@@ -128,10 +108,10 @@ def send_to_registrants(
     )
 
 
-def lrc_calendar_event(**event_data):
+def calendar_event(title, start, duration, uid, description=None):
 
-    duration = timedelta(hours=1, minutes=30)
-    start = event_data['date'] + timedelta(hours=19, minutes=30)
+    duration = duration
+    start = start
 
     cal = icalendar.Calendar()
     cal.add('prodid', '-//VSF announcements//virtualscienceforum.org//')
@@ -139,12 +119,13 @@ def lrc_calendar_event(**event_data):
 
 
     event = icalendar.Event()
-    event.add('summary', f"Long Range Colloquium by {event_data['speaker_name']}")
-    event.add('description', f"Title: {event_data['title']}\n\nAbstract:{event_data['abstract']}")
+    event.add('summary', title)
+    if description is not None:
+        event.add('description', description)
     event.add('dtstart', start)
     event.add('dtend', start + duration)
-    event.add('dtstamp', datetime.now(tz=pytz.timezone('Europe/Amsterdam')))
-    event['uid'] = event['dtstart'].to_ical().decode() + '@virtualscienceforum.org'
+    event.add('dtstamp', datetime.now(tz=pytz.UTC))
+    event['uid'] = uid + '@virtualscienceforum.org'
 
     organizer = vCalAddress('MAILTO:vsf@virtualscienceforum.org')
     organizer.params['cn'] = vText('Virtual Science Forum')
@@ -154,11 +135,20 @@ def lrc_calendar_event(**event_data):
     
     return cal.to_ical()
 
+
+def lrc_calendar_event(**event_data):
+    duration = timedelta(hours=1, minutes=30)
+    return calendar_event(
+        title=f"Long Range Colloquium by {event_data['speaker_name']}",
+        start=event_data['date'],
+        duration=duration,
+        uid=event['dtstart'].to_ical().decode(),
+        description=f"Title: {event_data['title']}\n\nAbstract:{event_data['abstract']}"
+    )
+
 ## This mailing list is read-only (can only be used from API), and therefore not a secret
 
 announce_list = 'vsf-announce@mail.virtualscienceforum.org'
-
-
 # +
 # Secrets
 
@@ -175,11 +165,7 @@ def zoom_headers():
 
 
 mailgun_api_key = check_output(["pass", "mailgun_api_key"]).decode().strip()
-
-# +
 headers = zoom_headers()
-
-r = requests.get('https://api.zoom.us/v2/users/', headers=headers)
 # -
 
 meetings = requests.get(f"https://api.zoom.us/v2/users/me/meetings", headers=headers).json()
@@ -224,6 +210,8 @@ for lrc in past_lrc:
     )
 # -
 
+api_query(get, f'lists/{announce_list}/members')['total_count']
+
 meeting_details = requests.get(f"https://api.zoom.us/v2/meetings/{long_range_meeting['id']}", headers=headers).json()
 
 # +
@@ -259,7 +247,7 @@ seaborn.catplot(data=all_registration_timings.astype('timedelta64[m]') / 60 / 24
 
 reminder_template = """Dear %recipient_name%,
 
-Thank you for registering for today's Long Range Colloquium! The talk will begin in four hours (19:30 CEST / 1:30 PM ET).
+Thank you for registering for today's Long Range Colloquium by {speaker_name}! The talk will begin in four hours (19:30 CEST / 1:30 PM ET).
 We will, however, have an informal chat about research with {speaker_name} starting a bit earlier—15 minutes before the talk. You are very welcome to join!
 
 Your can join using your [registration link](%recipient.join_url%).
@@ -275,7 +263,7 @@ The Virtual Science Forum team"""
 
 send_to_registrants(
     reminder_template.format(**event_data), 'Long Range Colloquium starting soon', long_range_registrants,
-    when=datetime(2020, 8, 19, 15, 0, tzinfo=pytz.UTC)
+    when=(event_data['date'] - timedelta(hours=4))
 )
 
 # ## Extra post-colloquium invitation
@@ -297,31 +285,19 @@ send_to_registrants(extra_invitation_template.format(**event_data, room_url=XXX)
 # ## Announce
 
 event_data = dict(
-    speaker_name="Mohammad Hafezi",
-    speaker_affiliation="University of Maryland and JQI",
-    date=datetime(2020, 8, 19, tzinfo=pytz.timezone('Europe/Amsterdam')),
+    speaker_name="Pedram Roushan",
+    speaker_affiliation="Google AI Quantum",
+    date=long_range_date.to_pydatetime().astimezone(pytz.timezone('Europe/Amsterdam')),
     speaker_pronoun="he",
-    title="Quantum optics meets correlated electrons",
-    abstract="""One of the key challenges in the development of quantum technologies is the control of light-matter interaction at the quantum level where individual excitations matter. During the past couple of decades, there has been tremendous progress in controlling individual photons and other excitations such as spin, excitonic, phononic in solid-state systems. Such efforts have been motivated to develop quantum technologies such as quantum memories, quantum transducers, quantum networks, and quantum sensing. While these efforts have been mainly focused on control and manipulation of individual excitations (i.e., single-particle physics), both desired and undesired many-body effects have become important. Therefore, it is intriguing to explore whether these quantum optical control techniques could pave a radically new avenue to prepare, manipulate, and detect non-local and correlated electronic states, such as topological ones.
-
-We present several examples of such ideas: (1) Optically driven fractional quantum Hall states: While in Floquet band engineering, the focus is on the control of the single-particle Hamiltonian, here the optical drive can effectively engineer the interaction terms, which could lead to the preparation of model Hamiltonians and exotic topological states. (2) Enhancing superconductivity with an optical drive: we propose a new approach for the enhancement of superconductivity by the targeted destruction of the competing charge/bond density waves (BDW) order. By investigating the optical coupling of gapless, collective fluctuations of the BDWs, we argue that the resonant excitation of these modes can melt the underlying BDW order parameter. We propose an experimental setup to implement such an optical coupling using 2D plasmon-polariton hybrid systems. (3) We also discuss how the coupling of an empty cavity can enhance the superconducting transition temperature, in a quantum analogy to the Eliasberg effect. In the end, we discuss how by driving a semi-conductor and creating a population inversion, one could achieve s-wave and p-wave superconducting pairing.
-
-References:
-
-* Fractional Quantum Hall States:
-  * Physical Review Letters, 119, 247403 (2017)
-  * Physical Review B, 98, 155124 (2018)
-  * arXiv:2005.13569 (2020)
-* Superconductivity:
-  * Phys. Rev. Lett., 122 , 167002 (2019)
-  * Phys. Rev. B, 101, 224506 (2020)"""
+    title="Tuning quantum information scrambling in two-dimensional systems",
+    abstract="""The promise of quantum computers is that certain computational tasks might be executed exponentially faster on a quantum processor than on a classical processor. In 2019, we reported the use of a processor with programmable superconducting qubits to create quantum states on 53 qubits, corresponding to a computational state space of dimension 253 (about 1016). Measurements from repeated experiments sample the resulting probability distribution, which we verify using classical simulations. Our Sycamore processor takes about 200 seconds to sample one instance of a quantum circuit a million times—our benchmarks indicate that the equivalent task for a classical supercomputer would take approximately 10,000 years. Established quantum supremacy, we now take a closer look at how quantum information scrambling takes place and computational complexity grows. We demonstrate that the complexity of quantum circuits is directly revealed through measurements of out-of-time-order correlators (OTOCs), which capture the spatial-temporal spread of local perturbations. We implement a variety of quantum circuits ranging from simple integrable circuits such as XY model in 1D to fully ergotic circuits such as 2D random circuits. Our protocol effectively separates scrambling from gate-error induced noise, allowing us to distinguish the complexity of these circuits. We image the dispersion of the scrambling wavefront as it changes from diffusive to ballistic propagation, resulting from changing the entangling gates. By tuning away from the Clifford gate set, we break integrability and dial-in ergodicity and distinguish these complexity classes from their fluctuation signatures. Our work establishes OTOC as a tool to visualize scrambling and diagnose complexity in time and size scales that are challenging to access classically."""
 )
 
 announcement_template = """Dear %recipient_name%,
 
 We would like to invite you to the upcoming VSF Long Range Colloquium that is going to take place {date:%A %B %-d} at 1:30 PM ET (19:30 CEST).
 
-The speaker is {speaker_name} ({speaker_affiliation}), and the talk title is "{title}".
+We are happy to have {speaker_name} ({speaker_affiliation}) as the next speaker, who is goint to talk about "{title}".
 
 To see the talk abstract and register, please go to [the colloquium page](https://virtualscienceforum.org/#/long_range_colloquium) or register directly at this [URL]({registration_url}).
 
@@ -350,3 +326,52 @@ api_query(
         ("attachment", ("long_range_colloquium.ics", lrc_calendar_event(**event_data)))
     ],
 )
+# -
+# ## Zoom recordings
+
+recording_urls = requests.get(f"https://api.zoom.us/v2/meetings/{past_lrc[0]['id']}/recordings", headers=headers).json()
+
+mp4_url = next(file["download_url"] for file in recording_urls['recording_files'] if file["file_type"].lower() == "mp4")
+
+mp4_response = requests.get(
+    mp4_url, params=[("access_token", headers["authorization"][len("Bearer "):])],
+    stream=True
+)
+with open(Path('colloquium.mp4'), "wb") as f:
+    for chunk in mp4_response.iter_content(chunk_size=1024*1024):
+        f.write(chunk)
+
+import ffmpeg
+
+# +
+timestamp_re = re.compile(r"(?:(?P<hours>\d{1,2}):)?(?P<minutes>\d{1,2}):(?P<seconds>\d{2})(?:\.(?P<milliseconds>\d+))?")
+
+def time_from_timestamp(timestamp: str) -> timedelta:
+    if (match := re.fullmatch(timestamp_re, timestamp)) is None:
+        raise ValueError("Incorrect format")
+    return timedelta(**{k: int(v) for k, v in match.groupdict(default=0).items()})
+
+
+# -
+
+in_file = ffmpeg.input('colloquium.mp4')
+
+# !rm out.mp4
+
+ffmpeg.concat(in_file.trim(start=5, end=40)).output("out.mp4").run()
+
+ffmpeg.co
+
+a.run()
+
+from dateutil.parser import parse
+
+import re
+
+# +
+# timedelta?
+# -
+
+from datetime import time
+
+
