@@ -18,7 +18,7 @@ def host_key(timeslot: datetime.datetime) -> int:
     key_salt = os.getenv("HOST_KEY_SALT").encode()
     timestamp = timeslot.replace(second=0, microsecond=0, minute=0).timestamp()
     hashed = hashlib.sha512(int(timestamp).to_bytes(5, "big") + key_salt)
-    result = f"{int(hashed.hexdigest(), 16) % int(1e6):06}"
+    return f"{int(hashed.hexdigest(), 16) % int(1e6):06}"
 
 
 def update_host_key():
