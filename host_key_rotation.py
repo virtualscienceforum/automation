@@ -45,7 +45,7 @@ def rotate_meetings():
     for m in sc_meetings:
         m["start_time"] = parse(m["start_time"])
 
-    live = [m for m in sc_meetings if m["live"]]
+    live = [m for m in sc_meetings if m.get("live")]
 
     try:
         upcoming = min(
