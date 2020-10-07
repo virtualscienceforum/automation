@@ -59,15 +59,15 @@ def all_meetings(user_id) -> list:
         if not next_page_token:
             break
     
-        live_meetings = zoom_request(
-            requests.get,
-            f"{ZOOM_API}users/{user_id}/meetings",
-            params={"type": "scheduled", "page_size": 300, "next_page_token": next_page_token}
-        )["meetings"]
+    live_meetings = zoom_request(
+        requests.get,
+        f"{ZOOM_API}users/{user_id}/meetings",
+        params={"type": "scheduled", "page_size": 300, "next_page_token": next_page_token}
+    )["meetings"]
 
-        if live_meetings:
-            for meeting in meetings:
-                if meeting["id"] == live_meetings[0]["id"]:
-                    meeting["live"] = True
+    if live_meetings:
+        for meeting in meetings:
+            if meeting["id"] == live_meetings[0]["id"]:
+                meeting["live"] = True
         
-        return meetings
+    return meetings
