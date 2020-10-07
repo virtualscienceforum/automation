@@ -96,3 +96,7 @@ def rotate_meetings():
             f"{common.ZOOM_API}meetings/{meeting['id']}",
             data=json.dumps({"settings": {"join_before_host": False}}),
         )
+
+if __name__ == "__main__":
+    update_host_key()
+    rotate_meetings()
