@@ -62,7 +62,7 @@ def all_meetings(user_id) -> list:
     live_meetings = zoom_request(
         requests.get,
         f"{ZOOM_API}users/{user_id}/meetings",
-        params={"type": "scheduled", "page_size": 300, "next_page_token": next_page_token}
+        params={"type": "live", "page_size": 300}
     )["meetings"]
 
     if live_meetings:
