@@ -78,17 +78,18 @@ def rotate_meetings():
             or live[0]["start_time"] < now - datetime.timedelta(minutes=90)
         )
     ):
-        live_id = live[0]["id"]
-        common.zoom_request(
-            requests.put,
-            f"{common.ZOOM_API}meetings/{live_id}/status",
-            data=json.dumps({"action": "end"}),
-        )
-        common.zoom_request(
-            requests.patch,
-            f"{common.ZOOM_API}meetings/{live_id}",
-            data=json.dumps({"settings": {"join_before_host": False}}),
-        )
+        for live_meeting in live:
+            live_id = live_meeting["id"]
+            common.zoom_request(
+                requests.put,
+                f"{common.ZOOM_API}meetings/{live_id}/status",
+                data=json.dumps({"action": "end"}),
+            )
+            common.zoom_request(
+                requests.patch,
+                f"{common.ZOOM_API}meetings/{live_id}",
+                data=json.dumps({"settings": {"join_before_host": False}}),
+            )
 
     for meeting in recent:
         common.zoom_request(
