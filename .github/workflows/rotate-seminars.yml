@@ -1,9 +1,8 @@
 name: Hourly speakers' corner updates
 
 on:
-  # - schedule:
-  #   - cron:  '55 * * * *'
-  workflow_dispatch
+  schedule:
+    - cron: '55 * * * *'
 
 jobs:
   rotate:
