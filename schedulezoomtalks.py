@@ -1,39 +1,47 @@
 import os
 import github
 import requests
+import secrets
 from researchseminarsdotorg import *
 from requests import get, post, put
 from io import StringIO
 from ruamel.yaml import YAML
 from common import *
 
-TALKS_FILE = "speakers_corner_talks.yml"
+def schedule_zoom_talk(talk) -> Tuple[string, string]:
 
-def schedule_zoom_talk(talk) -> string:
+    # Generate a password for the meeting. This is required since
+    # otherwise the meeting room will be forced. Zoom limits the
+    # password length to max 10 characters.
+    zoom_password = secrets.token_urlsafe(10)
 
     # Form the talk registration body
     request_body =
     {
       "topic": "Speakers\' corner talk by %s"%(talk.get("name")),
       "type": 2, # Scheduled meeting
-      "start_time": talk.get("time"), #2020-03-31T17:00:00
+      "start_time": talk["time"],
       "timezone": "UTC",
-      "duration": 60, # 90 minutes
-      "schedule_for": "vsf@virtualscienceforum.org",  # Zoom user ID or Zoom email address
-      "agenda":talk.get("title"),
-      "password": "",
+      "duration": 60,
+      "schedule_for": SPEAKERS_CORNER_USER_ID,
+      "password": zoom_password,
 
       # Meeting settings
       "settings": {
         "host_video": True,
-        "participant_video": True,
+        "participant_video": False,
         "cn_meeting": False,  # Host the meeting in China?
         "in_meeting": False,  # Host the meeting in India?
-        "join_before_host": False,
+        "join_before_host": False, # This will be switched to True shortly
+                                   # before the meeting starts by the VSF bot.
+                                   # It will also be switched back to False
+                                   # after the meetings ends.
         "mute_upon_entry": True,
-        "watermark": False,  # Add a watermark when screensharing?
-        "use_pmi": False, # Don't use the Personal Meeting ID, but generate one
+        "watermark": False,  # Don't add a watermark when screensharing
+        "use_pmi": False, # Don't use Personal Meeting ID, but generate one
         "approval_type": 0, # Automatically approve
+        "close_registration" : True, # Close registration after event date
+        "waiting_room" : False,    # No waiting room
         "audio": "both",
         "auto_recording": "cloud",
         "enforce_login": False,
@@ -49,20 +57,28 @@ def schedule_zoom_talk(talk) -> string:
         params={"body":request_body}
     )
 
-    return response.id
+    return response.id, zoom_password
 
 def parse_talks(talks) -> int:
     num_updated = 0
     for talk in talks:
-        if( talk.get('zoom_link', "") == "" && talk.get('event_type') == "speakers_corner" ):
-            # Schedule the talk
-            meeting_id = schedule_zoom_talk(talk)
-            # Update the talk
-            talk.get("zoom_meeting_id") = meeting_id
-            num_updated += 1
+        # If we are processing a speakers corner talk, and its meeting id has
+        # already been set, there's nothing left to do
+        if not (talk.get('zoom_meeting_id', "") == "") and
+               (talk.get('event_type') == "speakers_corner"):
+            continue
 
-            # Add this talk to researchseminars.org
-            add_talk_to_speakerscorner(talk)
+        # Schedule the talk
+        meeting_id, meeting_password = schedule_zoom_talk(talk)
+        # Update the talk
+        talk.get("zoom_meeting_id") = meeting_id
+        # Add this talk to researchseminars.org
+        add_talk_to_speakerscorner(talk)
+
+        # TODO: Do something with the password
+
+        
+        num_updated += 1
 
     return num_updated
 
