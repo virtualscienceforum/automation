@@ -2,18 +2,12 @@ import os
 import github
 import requests
 import secrets
-from researchseminarsdotorg import *
-from requests import get, post, put
+import common
+from researchseminarsdotorg import publish_to_researchseminars
 from io import StringIO
 from ruamel.yaml import YAML
-from common import *
 
 def schedule_zoom_talk(talk) -> Tuple[string, string]:
-
-    # Generate a password for the meeting. This is required since
-    # otherwise the meeting room will be forced. Zoom limits the
-    # password length to max 10 characters.
-    zoom_password = secrets.token_urlsafe(10)
 
     # Form the talk registration body
     request_body =
@@ -23,8 +17,12 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
       "start_time": talk["time"],
       "timezone": "UTC",
       "duration": 60,
-      "schedule_for": SPEAKERS_CORNER_USER_ID,
-      "password": zoom_password,
+      "schedule_for": common.SPEAKERS_CORNER_USER_ID,
+
+      # Generate a password for the meeting. This is required since
+      # otherwise the meeting room will be forced. Zoom limits the
+      # password length to max 10 characters.
+      "password": secrets.token_urlsafe(10),
 
       # Meeting settings
       "settings": {
@@ -32,10 +30,10 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
         "participant_video": False,
         "cn_meeting": False,  # Host the meeting in China?
         "in_meeting": False,  # Host the meeting in India?
-        "join_before_host": False, # This will be switched to True shortly
-                                   # before the meeting starts by the VSF bot.
-                                   # It will also be switched back to False
-                                   # after the meetings ends.
+
+        # This will be switched to True shortly before the meeting starts
+        # by the VSF bot. It will also be switched back to False afterwards
+        "join_before_host": False, 
         "mute_upon_entry": True,
         "watermark": False,  # Don't add a watermark when screensharing
         "use_pmi": False, # Don't use Personal Meeting ID, but generate one
@@ -85,13 +83,13 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
 
     response = zoom_request(
         requests.post,
-        f"{ZOOM_API}users/{user_id}/meetings",
+        f"{common.ZOOM_API}users/{user_id}/meetings",
         params={"body":request_body}
     )
 
-    return response.id, zoom_password
+    return response.id
 
-def parse_talks(talks) -> int:
+def schedule_talks(talks) -> int:
     num_updated = 0
     for talk in talks:
         # If we are not processing a speakers corner talk, or if the
@@ -103,6 +101,7 @@ def parse_talks(talks) -> int:
         meeting_id, meeting_password = schedule_zoom_talk(talk)
         # Update the talk
         talk.get("zoom_meeting_id") = meeting_id
+
         # Add this talk to researchseminars.org
         publish_to_researchseminars(talk)
 
@@ -121,22 +120,21 @@ if __name__ == "__main__":
     # Read the talks file
     yaml = YAML()
     try:
-        talks_data = repo.get_contents(TALKS_FILE, ref="master")
+        talks_data = repo.get_contents(common.TALKS_FILE, ref="master")
         talks = yaml.load(StringIO(talks_data.decoded_content.decode()))
     except github.UnknownObjectException:
         talks_data = None
         talks = []
 
-    # If there are talks to be parsed...
-    if len(talks) != 0:
-        # ... parse them and keep track of how many we updated
-        num_updated = parse_talks(talks)
+    # If we added Zoom links, we should update the file in the repo
+    if (num_updated := schedule_talks(talks) ):
+        serialized = StringIO()
+        yaml.dump(talks, serialized)
 
-        # If we added Zoom links, we should update the file in the repo
-        if num_updated != 0:
-            serialized = StringIO()
-            yaml.dump(talks, serialized)
+        print("I updated %d talks, here is the new yaml file"%num_updated)
+        print(yaml)
 
+        if False:
             repo.update_file(
               TALKS_FILE, f"Added Zoom link{1} for {0} scheduled speakers\'"\
                            "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),

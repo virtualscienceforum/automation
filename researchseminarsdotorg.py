@@ -74,7 +74,9 @@ def publish_to_researchseminars(talk):
     authorization = "vsf@virtualscienceforum.org %s" % api_token
 
     # Find speakers' corner series, and create it if it doesn't exist
-    if( !find_seminar_series("speakerscorner") ):
+    if not find_seminar_series("speakerscorner"):
+        print("[ResearchSeminars.org]: The speakerscorner seminar series "\
+              "does not yet exist. Creating it now")
         create_seminar_series(SPEAKERS_CORNER_SEMINAR_SERIES)
 
     # TODO: Figure out if we need to edit the series;
