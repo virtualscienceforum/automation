@@ -48,7 +48,39 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
         "alternative_hosts": "",
         "registrants_email_notification": True,
         "contact_email": "vsf@virtualscienceforum.org",
-      }
+      },
+
+      "questions": [
+        {"field_name": "First Name", "required": True},
+        {"field_name": "Last Name", "required": True},
+        {"field_name": "Email Address", "required": True},
+        {"field_name": "Confirm Email Address", "required": True},
+        {"field_name": "Organization", "required": True},
+      ],
+
+      "custom_questions": [
+        {
+          "title": "May we contact you about future Virtual Science Forum events?",
+          "type": "single", # short or single
+          "answers": ["Yes", "No"], # only single
+          "required": true
+        },
+        {
+          "title": "How did you hear about the Virtual Science Forum?",
+          "type": "single", # short or single
+          "answers": ["Email list",
+                      "One of the organizers",
+                      "A colleague (not an organizer)",
+                      "Other"],
+          "required": true
+        },
+        {
+          "title": "Please confirm you have read the participant instructions: \
+                    http://virtualscienceforum.org/#/attendeeguide*",
+          "type": "short", # short or single
+          "required": true
+        },
+      ]
     }
 
     response = zoom_request(
@@ -62,10 +94,9 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
 def parse_talks(talks) -> int:
     num_updated = 0
     for talk in talks:
-        # If we are processing a speakers corner talk, and its meeting id has
-        # already been set, there's nothing left to do
-        if not (talk.get('zoom_meeting_id', "") == "") and
-               (talk.get('event_type') == "speakers_corner"):
+        # If we are not processing a speakers corner talk, or if the
+        # zoom meeting id has already been set, there's nothing left to do
+        if "zoom_meeting_id" in talk or talk["event_type"] != "speakers_corner":
             continue
 
         # Schedule the talk
@@ -73,11 +104,11 @@ def parse_talks(talks) -> int:
         # Update the talk
         talk.get("zoom_meeting_id") = meeting_id
         # Add this talk to researchseminars.org
-        add_talk_to_speakerscorner(talk)
+        publish_to_researchseminars(talk)
 
         # TODO: Do something with the password
+        # do_something_with_password()
 
-        
         num_updated += 1
 
     return num_updated

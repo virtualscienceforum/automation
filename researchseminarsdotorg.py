@@ -6,8 +6,8 @@ SPEAKERS_CORNER_SEMINAR_SERIES = {"series_id": "speakerscorner",
            "is_conference": False,
            "topics": [""], # TODO: Get a list of topics
            "language": "en",
-           "institutions": ["Global"],
-           "timezone": "America/New_York",
+           "institutions": [""],
+           "timezone": "UTC",
            "homepage": "https://virtualscienceforum.org/speakerscorner.md",
            "visibility": 1, # 0=private, 1=unlisted, 2=public
            "access_control": 0, # 0=open, see schema for more
@@ -68,7 +68,7 @@ def add_talk_to_series(series_id, payload, authorization):
     else:
         return "", r.status_code
 
-def add_talk_to_speakerscorner(talk):
+def publish_to_researchseminars(talk):
     # talk should be provided in yaml format
     api_token = os.getenv("RESEARCHSEMINARS_API_TOKEN")
     authorization = "vsf@virtualscienceforum.org %s" % api_token
@@ -83,10 +83,10 @@ def add_talk_to_speakerscorner(talk):
     # Set up payload for talk creation
     talk_payload = {"title":talk.get('title'),
                     "speaker":talk.get('author'), # TODO: will be 'speakerS'
-                    "live_link":"zoom.us/%s"%talk.get('zoom_meeting_id'),
-                    "online":1,
-                    "start_time":talk.get("time"),
-                    "timezone":"UTC" # TODO
+                    "live_link":"zoom.us/%s"%talk["zoom_meeting_id"],
+                    "online": True,
+                    "start_time":talk["time"],
+                    "timezone":"UTC"
                     }
 
     # Make request to remote API
