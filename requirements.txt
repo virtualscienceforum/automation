@@ -2,3 +2,5 @@ requests
 pytz
 python-dateutil
 PyJWT
+PyGithub
+PyYAML
