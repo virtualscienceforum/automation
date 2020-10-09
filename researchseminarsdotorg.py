@@ -85,7 +85,7 @@ def publish_to_researchseminars(talk):
     # Set up payload for talk creation
     talk_payload = {"title":talk.get('title'),
                     "speaker":talk.get('author'), # TODO: will be 'speakerS'
-                    "live_link":"zoom.us/%s"%talk["zoom_meeting_id"],
+                    "live_link":"https://virtualscienceforum-org.zoom.us/j/%s"%talk["zoom_meeting_id"],
                     "online": True,
                     "start_time":talk["time"],
                     "timezone":"UTC"
