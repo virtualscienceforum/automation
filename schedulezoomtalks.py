@@ -134,7 +134,7 @@ if __name__ == "__main__":
     # Read the talks file
     yaml = YAML()
     try:
-        talks_data = repo.get_contents(common.TALKS_FILE, ref="master")
+        talks_data = repo.get_contents(common.TALKS_FILE, ref="test_zoom_meeting_registering_workflow")
         talks = yaml.load(StringIO(talks_data.decoded_content.decode()))
     except github.UnknownObjectException:
         talks_data = None
@@ -154,5 +154,5 @@ if __name__ == "__main__":
                            "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
               serialized.getvalue(),
               sha=talks_data.sha,
-              branch='master'
+              branch='test_zoom_meeting_registering_workflow'
             )
