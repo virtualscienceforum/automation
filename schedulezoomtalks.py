@@ -33,7 +33,7 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
 
         # This will be switched to True shortly before the meeting starts
         # by the VSF bot. It will also be switched back to False afterwards
-        "join_before_host": False, 
+        "join_before_host": False,
         "mute_upon_entry": True,
         "watermark": False,  # Don't add a watermark when screensharing
         "use_pmi": False, # Don't use Personal Meeting ID, but generate one
@@ -48,46 +48,67 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
         "contact_email": "vsf@virtualscienceforum.org",
       },
 
-      "questions": [
-        {"field_name": "First Name", "required": True},
-        {"field_name": "Last Name", "required": True},
-        {"field_name": "Email Address", "required": True},
-        {"field_name": "Confirm Email Address", "required": True},
-        {"field_name": "Organization", "required": True},
-      ],
 
-      "custom_questions": [
-        {
-          "title": "May we contact you about future Virtual Science Forum events?",
-          "type": "single", # short or single
-          "answers": ["Yes", "No"], # only single
-          "required": true
-        },
-        {
-          "title": "How did you hear about the Virtual Science Forum?",
-          "type": "single", # short or single
-          "answers": ["Email list",
-                      "One of the organizers",
-                      "A colleague (not an organizer)",
-                      "Other"],
-          "required": true
-        },
-        {
-          "title": "Please confirm you have read the participant instructions: \
-                    http://virtualscienceforum.org/#/attendeeguide*",
-          "type": "short", # short or single
-          "required": true
-        },
-      ]
+    }
+
+    # Update the registraion questions
+    try:
+        response = zoom_request(
+            requests.post,
+            f"{common.ZOOM_API}users/{user_id}/meetings",
+            params={"body":request_body}
+        )
+
+        patch_registration_questions(response.id)
+
+        return response.id
+    except Exception as e:
+        print("Could not create meeting, error: ", e)
+        return None
+
+def patch_registration_questions(meeting_id) -> int:
+
+    request_body = {
+        "questions": [
+          {"field_name": "First Name", "required": True},
+          {"field_name": "Last Name", "required": True},
+          {"field_name": "Email Address", "required": True},
+          {"field_name": "Confirm Email Address", "required": True},
+          {"field_name": "Organization", "required": True},
+        ],
+
+        "custom_questions": [
+          {
+            "title": "May we contact you about future Virtual Science Forum events?",
+            "type": "single", # short or single
+            "answers": ["Yes", "No"], # only single
+            "required": true
+          },
+          {
+            "title": "How did you hear about the Virtual Science Forum?",
+            "type": "single", # short or single
+            "answers": ["Email list",
+                        "One of the organizers",
+                        "A colleague (not an organizer)",
+                        "Other"],
+            "required": true
+          },
+          {
+            "title": "Please confirm you have read the participant instructions: \
+                      http://virtualscienceforum.org/#/attendeeguide*",
+            "type": "short", # short or single
+            "required": true
+          },
+        ]
     }
 
     response = zoom_request(
-        requests.post,
-        f"{common.ZOOM_API}users/{user_id}/meetings",
+        requests.patch,
+        f"{common.ZOOM_API}users/{user_id}/meetings/{meeting_id}/registrants/questions",
         params={"body":request_body}
     )
 
-    return response.id
+    return response.status
 
 def schedule_talks(talks) -> int:
     num_updated = 0
@@ -97,18 +118,11 @@ def schedule_talks(talks) -> int:
         if "zoom_meeting_id" in talk or talk["event_type"] != "speakers_corner":
             continue
 
-        # Schedule the talk
-        meeting_id, meeting_password = schedule_zoom_talk(talk)
-        # Update the talk
-        talk.get("zoom_meeting_id") = meeting_id
-
-        # Add this talk to researchseminars.org
-        publish_to_researchseminars(talk)
-
-        # TODO: Do something with the password
-        # do_something_with_password()
-
-        num_updated += 1
+        if( meetind_id := schedule_zoom_talk(talk) ):
+            talk.get("zoom_meeting_id") = meeting_id
+            # Add this talk to researchseminars.org
+            publish_to_researchseminars(talk)
+            num_updated += 1
 
     return num_updated
 
