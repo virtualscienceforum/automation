@@ -7,7 +7,7 @@ from researchseminarsdotorg import publish_to_researchseminars
 from io import StringIO
 from ruamel.yaml import YAML
 
-def schedule_zoom_talk(talk) -> Tuple[string, string]:
+def schedule_zoom_talk(talk) -> string:
 
     # Form the talk registration body
     request_body =
@@ -44,27 +44,66 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
         "auto_recording": "cloud",
         "enforce_login": False,
         "alternative_hosts": "",
-        "registrants_email_notification": True,
+
+        # Email notifications are turned off when created, so that we can
+        # register the speaker without them receiving an invitation to
+        # their own talk. They will receive a separate email with info.
+        # This will be turned on with a PATCH once the speaker is registered.
+        "registrants_email_notification": False,
         "contact_email": "vsf@virtualscienceforum.org",
       },
 
 
     }
 
-    # Update the registraion questions
-    try:
-        response = zoom_request(
-            requests.post,
-            f"{common.ZOOM_API}users/{user_id}/meetings",
-            params={"body":request_body}
-        )
+    # Create the meeting
+    response = zoom_request(
+        requests.post,
+        f"{common.ZOOM_API}users/{user_id}/meetings",
+        params={"body":request_body}
+    )
 
-        patch_registration_questions(response.id)
-
-        return response.id
-    except Exception as e:
-        print("Could not create meeting, error: ", e)
+    if( response.status != 201 ):
         return None
+
+    # Extract meeting id
+    meeting_id = response.id
+    # Register the speaker
+    register_speaker(meeting_id)
+    # Update the meeting registration questions
+    patch_registration_questions(meeting_id, talk)
+    # Update the registrants email notification
+    patch_registration_notification(meeting_id)
+
+    return meeting_id
+
+def register_speaker(meeting_id, talk) -> int:
+
+    request_payload = {
+      "email": talk["email"],
+      "first_name": "talk["speaker_name"],
+    }
+
+    # Send request
+    response = zoom_request(
+        requests.post,
+        f"{common.ZOOM_API}users/{user_id}/meetings/{meeting_id}/registrants",
+        params={"body":request_body}
+    )
+
+    # 201: Registration created
+    # 300: Meeting {meetingId} is not found or has expired.
+    # 400:
+        # Error Code: 1010
+        # User does not belong to this account: {accountId}.
+        # Error Code: 3003
+        # You are not the meeting host.
+        # Error Code: 3000
+        # Cannot access meeting info.
+    # 404: Meeting not found.
+        # Error Code: 1001
+        # Meeting host does not exist: {userId}.
+    return response.status
 
 def patch_registration_questions(meeting_id) -> int:
 
@@ -105,6 +144,24 @@ def patch_registration_questions(meeting_id) -> int:
     response = zoom_request(
         requests.patch,
         f"{common.ZOOM_API}users/{user_id}/meetings/{meeting_id}/registrants/questions",
+        params={"body":request_body}
+    )
+
+    return response.status
+
+def patch_registration_notification(meeting_id) -> int:
+
+    # Form the talk registration body
+    request_body = {
+      "settings": {
+        "registrants_email_notification": True,
+      },
+    }
+
+    # Create the meeting
+    response = zoom_request(
+        requests.patch,
+        f"{common.ZOOM_API}users/{user_id}/meetings/{meeting_id}",
         params={"body":request_body}
     )
 
