@@ -7,6 +7,11 @@ from researchseminarsdotorg import publish_to_researchseminars
 from io import StringIO
 from ruamel.yaml import YAML
 
+ISSUE_RESPONSE_TEMPLATE = jinja2.Template(
+"""Hi again! I've now created a Zoom meeting for your talk, with meeting ID
+   {{ meeting_id }}. You'll receive a separate email with a host key.
+""")
+
 def schedule_zoom_talk(talk) -> string:
 
     # Form the talk registration body
@@ -167,7 +172,13 @@ def patch_registration_notification(meeting_id) -> int:
 
     return response.status
 
-def schedule_talks(talks) -> int:
+def respond_to_issue_about_zoom_id(repo, talk):
+    issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=meeting_id)
+    issue = repo.get_issue(number=talk["workflow_issue"])
+    issue.create_comment(issue_comment)
+    return issue_comment
+
+def schedule_talks(repo, talks) -> int:
     num_updated = 0
     for talk in talks:
         # If we are not processing a speakers corner talk, or if the
@@ -179,6 +190,9 @@ def schedule_talks(talks) -> int:
             talk.get("zoom_meeting_id") = meeting_id
             # Add this talk to researchseminars.org
             publish_to_researchseminars(talk)
+            # Create comment in issue
+            respond_to_issue_about_zoom_id(repo, talk)
+
             num_updated += 1
 
     return num_updated
@@ -198,7 +212,7 @@ if __name__ == "__main__":
         talks = []
 
     # If we added Zoom links, we should update the file in the repo
-    if (num_updated := schedule_talks(talks) ):
+    if (num_updated := schedule_talks(repo, talks) ):
         serialized = StringIO()
         yaml.dump(talks, serialized)
 
