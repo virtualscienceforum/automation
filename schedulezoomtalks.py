@@ -172,11 +172,15 @@ def patch_registration_notification(meeting_id) -> int:
 
     return response.status
 
-def respond_to_issue_about_zoom_id(repo, talk):
+def notify_issue_about_zoom_meeting(repo, talk):
     issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=meeting_id)
-    issue = repo.get_issue(number=talk["workflow_issue"])
-    issue.create_comment(issue_comment)
-    return issue_comment
+
+    try:
+        issue = repo.get_issue(number=talk["workflow_issue"])
+        issue.create_comment(issue_comment)
+    except:
+        print("Couldn't create issue comment. The content would have been: ")
+        print(issue_comment)
 
 def schedule_talks(repo, talks) -> int:
     num_updated = 0
@@ -191,7 +195,7 @@ def schedule_talks(repo, talks) -> int:
             # Add this talk to researchseminars.org
             publish_to_researchseminars(talk)
             # Create comment in issue
-            respond_to_issue_about_zoom_id(repo, talk)
+            notify_issue_about_zoom_meeting(repo, talk)
 
             num_updated += 1
 
@@ -216,14 +220,10 @@ if __name__ == "__main__":
         serialized = StringIO()
         yaml.dump(talks, serialized)
 
-        print("I updated %d talks, here is the new yaml file"%num_updated)
-        print(yaml)
-
-        if False:
-            repo.update_file(
-              TALKS_FILE, f"Added Zoom link{1} for {0} scheduled speakers\'"\
-                           "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
-              serialized.getvalue(),
-              sha=talks_data.sha,
-              branch='test_zoom_meeting_registering_workflow'
-            )
+        repo.update_file(
+          TALKS_FILE, f"Added Zoom link{1} for {0} scheduled speakers\'"\
+                       "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
+          serialized.getvalue(),
+          sha=talks_data.sha,
+          branch='test_zoom_meeting_registering_workflow'
+        )
