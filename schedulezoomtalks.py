@@ -13,6 +13,25 @@ ISSUE_RESPONSE_TEMPLATE = jinja2.Template(
    {{ meeting_id }}. You'll receive a separate email with a host key.
 """)
 
+EMAIL_TEMPLATE = jinja2.Template(
+"""Hi {{ author }},
+
+   A Zoom meeting has now been scheduled for your Speakers' Corner talk.
+   A few minutes before your timeslot starts, you and your audience will be
+   able to join the meeting. You will then be able to claim the host role by
+   using the host key below. After an hour the meeting will automatically
+   be terminated, and you will recieve more information about the recording
+   afterwards.
+
+   Your meeting information:
+   Zoom link: {{ meeting_zoom_link }}
+   Host key: {{ meeting_host_key }}
+   Talk title: {{ meeting_talk_title }}
+
+   Thank you in advance for contributing to the Speakers' Corner!
+   - The VSF team
+   """)
+
 def schedule_zoom_talk(talk) -> string:
 
     # Form the talk registration body
@@ -183,11 +202,29 @@ def notify_issue_about_zoom_meeting(repo, talk):
         print("Couldn't create issue comment. The content would have been: ")
         print(issue_comment)
 
-def notify_author(talk):
+def notify_author(talk) -> string:
     # Get the host key
-    meeting_host_key = host_key(talk["time"]
+    meeting_host_key = host_key(talk["time"])
 
-    # TODO: Email body, send email
+    # Format the email body
+    email_text = EMAIL_TEMPLATE.render(author=talk["speaker_name"],
+                                       meeting_zoom_link="",
+                                       meeting_host_key=meeting_host_key,
+                                       meeting_talk_title=talk["title"])
+
+    data = {
+        "from": "Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
+        "to": "{0} <{1}>".format(talk["speaker_name"], talk["email"]),
+        "subject": "Speakers' Corner talk",
+        "text": email_text,
+        "html": email_text,
+    }
+
+    return api_query(
+        post,
+        f"{common.MAILGUN_DOMAIN}messages",
+        data=data
+    )
 
 def schedule_talks(repo, talks) -> int:
     num_updated = 0
@@ -205,7 +242,6 @@ def schedule_talks(repo, talks) -> int:
             notify_issue_about_zoom_meeting(repo, talk)
             # Email the author
             notify_author(talk)
-
 
             num_updated += 1
 

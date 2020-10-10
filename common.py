@@ -9,6 +9,9 @@ ZOOM_API = "https://api.zoom.us/v2/"
 SPEAKERS_CORNER_USER_ID = "D0n5UNEHQiajWtgdWLlNSA"
 TALKS_FILE = "speakers_corner_talks.yml"
 
+MAILGUN_BASE_URL = "https://api.eu.mailgun.net/v3/"
+MAILGUN_DOMAIN = "mail.virtualscienceforum.org/"
+
 @lru_cache()
 def zoom_headers(duration: int=100) -> dict:
     zoom_api_key = os.getenv("ZOOM_API_KEY")
@@ -31,7 +34,6 @@ def zoom_request(method: callable, *args, **kwargs):
 
     if response.content:
         return response.json()
-
 
 def speakers_corner_user_id() -> str:
     users = zoom_request(requests.get, ZOOM_API + "users")["users"]
@@ -72,3 +74,16 @@ def all_meetings(user_id) -> list:
                 meeting["live"] = True
 
     return meetings
+
+
+def decode(response):
+    if response.status_code != 200:
+        raise RuntimeError(response.content.decode())
+    return json.loads(response.content.decode())
+
+def api_query(method, endpoint, **params):
+    return decode(method(
+        MAILGUN_BASE_URL + endpoint,
+        auth=("api", os.getenv("MAILGUN_API_KEY")),
+        **params
+    ))
