@@ -4,6 +4,7 @@ import requests
 import secrets
 import common
 from researchseminarsdotorg import publish_to_researchseminars
+from host_key_rotation import host_key
 from io import StringIO
 from ruamel.yaml import YAML
 
@@ -182,6 +183,12 @@ def notify_issue_about_zoom_meeting(repo, talk):
         print("Couldn't create issue comment. The content would have been: ")
         print(issue_comment)
 
+def notify_author(talk):
+    # Get the host key
+    meeting_host_key = host_key(talk["time"]
+
+    # TODO: Email body, send email
+
 def schedule_talks(repo, talks) -> int:
     num_updated = 0
     for talk in talks:
@@ -196,6 +203,9 @@ def schedule_talks(repo, talks) -> int:
             publish_to_researchseminars(talk)
             # Create comment in issue
             notify_issue_about_zoom_meeting(repo, talk)
+            # Email the author
+            notify_author(talk)
+
 
             num_updated += 1
 
