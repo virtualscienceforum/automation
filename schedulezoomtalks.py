@@ -17,16 +17,19 @@ EMAIL_TEMPLATE = jinja2.Template(
 """Hi {{ author }},
 
    A Zoom meeting has now been scheduled for your Speakers' Corner talk.
-   A few minutes before your timeslot starts, you and your audience will be
+   Five minutes before your timeslot starts, you and your audience will be
    able to join the meeting. You will then be able to claim the host role by
    using the host key below. After an hour the meeting will automatically
-   be terminated, and you will recieve more information about the recording
-   afterwards.
+   be terminated. Once the recording finishes processing, you will get the
+   opportunity to cut out parts of it.
 
    Your meeting information:
+   Talk title: {{ meeting_talk_title }}
+   Date: {{ meeting_date }}
+   Time slot: {{ meeting_start }} - {{ meeting_end }}
+
    Zoom link: {{ meeting_zoom_link }}
    Host key: {{ meeting_host_key }}
-   Talk title: {{ meeting_talk_title }}
 
    Thank you in advance for contributing to the Speakers' Corner!
    - The VSF team
@@ -77,8 +80,6 @@ def schedule_zoom_talk(talk) -> string:
         "registrants_email_notification": False,
         "contact_email": "vsf@virtualscienceforum.org",
       },
-
-
     }
 
     # Create the meeting
@@ -116,18 +117,6 @@ def register_speaker(meeting_id, talk) -> int:
         params={"body":request_body}
     )
 
-    # 201: Registration created
-    # 300: Meeting {meetingId} is not found or has expired.
-    # 400:
-        # Error Code: 1010
-        # User does not belong to this account: {accountId}.
-        # Error Code: 3003
-        # You are not the meeting host.
-        # Error Code: 3000
-        # Cannot access meeting info.
-    # 404: Meeting not found.
-        # Error Code: 1001
-        # Meeting host does not exist: {userId}.
     return response.status
 
 def patch_registration_questions(meeting_id) -> int:
@@ -207,10 +196,15 @@ def notify_author(talk) -> string:
     meeting_host_key = host_key(talk["time"])
 
     # Format the email body
+    meeting_start = datetime.datetime(talk["time"], tz=pytz.UTC)
+    meeting_end = meeting_start + datetime.timedelta(hours=1)
     email_text = EMAIL_TEMPLATE.render(author=talk["speaker_name"],
                                        meeting_zoom_link="",
                                        meeting_host_key=meeting_host_key,
-                                       meeting_talk_title=talk["title"])
+                                       meeting_talk_title=talk["title"],
+                                       meeting_date=meeting_start.date,
+                                       meeting_start=meeting_start.time,
+                                       meeting_end=meeting_end.time)
 
     data = {
         "from": "Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
