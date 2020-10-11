@@ -1,7 +1,6 @@
 name: Schedule Zoom Talks
 on:
-  repository_dispatch:
-    types: [schedule-zoom-talk]
+  workflow_dispatch
 
 jobs:
   scheduleTalks:
