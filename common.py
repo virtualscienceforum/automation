@@ -1,6 +1,7 @@
 from functools import lru_cache
 import os
 from time import time
+import json
 
 import jwt
 import requests
@@ -77,9 +78,10 @@ def all_meetings(user_id) -> list:
 
 
 def decode(response):
-    if response.status_code != 200:
+    if response.status_code > 299:  # Not OK
         raise RuntimeError(response.content.decode())
     return json.loads(response.content.decode())
+
 
 def api_query(method, endpoint, **params):
     return decode(method(

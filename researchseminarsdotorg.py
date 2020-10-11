@@ -19,13 +19,15 @@ SPEAKERS_CORNER_SEMINAR_SERIES = {"series_id": "speakerscorner",
                            "order": 0,
                            "display": True}]}
 
+
 def find_seminar_series(series_id):
-    url = "https://researchseminars.org/api/0/search/series?series_id=%s"%series_id
+    url = f"https://researchseminars.org/api/0/search/series?series_id={series_id}"
     r = get(url)
     if r.status_code == 200:
         J = r.json()
         results = J["properties"]["results"]
         return (len(results) != 0)
+
 
 def create_seminar_series(payload, authorization):
     url = "https://researchseminars.org/api/0/save/series/"
@@ -41,6 +43,7 @@ def create_seminar_series(payload, authorization):
     else:
         return False, ""
 
+
 def edit_seminar_series(name, payload, authorization):
     url = "https://researchseminars.org/api/0/save/series/"
     r = post(url, json=payload, headers={"authorization":authorization})
@@ -55,6 +58,7 @@ def edit_seminar_series(name, payload, authorization):
     else:
         return False, ""
 
+
 def add_talk_to_series(series_id, payload, authorization):
     url = "https://researchseminars.org/api/0/save/talk/"
     r = post(url, json=payload, headers={"authorization":authorization})
@@ -67,6 +71,7 @@ def add_talk_to_series(series_id, payload, authorization):
             return J["series_ctr"]
     else:
         return "", r.status_code
+
 
 def publish_to_researchseminars(talk):
     # talk should be provided in yaml format

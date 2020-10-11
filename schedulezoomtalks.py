@@ -1,45 +1,52 @@
 import os
+import secrets
+from io import StringIO
+from typing import Tuple
+import datetime
+
 import github
 import requests
-import secrets
+from ruamel.yaml import YAML
+import jinja2
+import pytz
+
 import common
 from researchseminarsdotorg import publish_to_researchseminars
 from host_key_rotation import host_key
-from io import StringIO
-from ruamel.yaml import YAML
+
 
 ISSUE_RESPONSE_TEMPLATE = jinja2.Template(
-"""Hi again! I've now created a Zoom meeting for your talk, with meeting ID
+"""I've now created a Zoom meeting for your talk, with meeting ID
    {{ meeting_id }}. You'll receive a separate email with a host key.
 """)
 
 EMAIL_TEMPLATE = jinja2.Template(
 """Hi {{ author }},
 
-   A Zoom meeting has now been scheduled for your Speakers' Corner talk.
-   Five minutes before your timeslot starts, you and your audience will be
-   able to join the meeting. You will then be able to claim the host role by
-   using the host key below. After an hour the meeting will automatically
-   be terminated. Once the recording finishes processing, you will get the
-   opportunity to cut out parts of it.
+A Zoom meeting has now been scheduled for your Speakers' Corner talk.
+Five minutes before your timeslot starts, you and your audience will be
+able to join the meeting. You will then be able to claim the host role by
+using the host key below. After an hour the meeting will automatically
+be terminated. Once the recording finishes processing, you will get the
+opportunity to cut out parts of it.
 
-   Your meeting information:
-   Talk title: {{ meeting_talk_title }}
-   Date: {{ meeting_date }}
-   Time slot: {{ meeting_start }} - {{ meeting_end }}
+Your meeting information:
+Talk title: {{ meeting_talk_title }}
+Date: {{ meeting_date }}
+Time slot: {{ meeting_start }} - {{ meeting_end }}
 
-   Zoom link: {{ meeting_zoom_link }}
-   Host key: {{ meeting_host_key }}
+Zoom link: {{ meeting_zoom_link }}
+Host key: {{ meeting_host_key }}
 
-   Thank you in advance for contributing to the Speakers' Corner!
-   - The VSF team
-   """)
+Thank you in advance for contributing to the Speakers' Corner!
+- The VSF team
+""")
 
-def schedule_zoom_talk(talk) -> Tuple[string, string]:
+
+def schedule_zoom_talk(talk) -> Tuple[str, str]:
 
     # Form the talk registration body
-    request_body =
-    {
+    request_body = {
       "topic": "Speakers\' corner talk by %s"%(talk.get("name")),
       "type": 2, # Scheduled meeting
       "start_time": talk["time"],
@@ -83,41 +90,36 @@ def schedule_zoom_talk(talk) -> Tuple[string, string]:
     }
 
     # Create the meeting
-    response = zoom_request(
+    response = common.zoom_request(
         requests.post,
-        f"{common.ZOOM_API}users/{user_id}/meetings",
+        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings",
         params={"body":request_body}
     )
 
-    if( response.status != 201 ):
-        return None
+    meeting_id = response["id"]
 
-    # Extract meeting id
-    meeting_id = response.id
-    # Register the speaker
-    register_speaker(meeting_id)
-    # Update the meeting registration questions
-    patch_registration_questions(meeting_id, talk)
-    # Update the registrants email notification
+    register_speaker(meeting_id, talk)
+    patch_registration_questions(meeting_id)
     patch_registration_notification(meeting_id)
 
-    return meeting_id, response.join_url
+    return meeting_id, response["registration_url"]
+
 
 def register_speaker(meeting_id, talk) -> int:
-
     request_payload = {
       "email": talk["email"],
-      "first_name": "talk["speaker_name"],
+      "first_name": talk["speaker_name"],
     }
 
     # Send request
-    response = zoom_request(
+    response = common.zoom_request(
         requests.post,
-        f"{common.ZOOM_API}users/{user_id}/meetings/{meeting_id}/registrants",
-        params={"body":request_body}
+        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants",
+        params={"body": request_payload}
     )
 
     return response.status
+
 
 def patch_registration_questions(meeting_id) -> int:
 
@@ -135,7 +137,7 @@ def patch_registration_questions(meeting_id) -> int:
             "title": "May we contact you about future Virtual Science Forum events?",
             "type": "single", # short or single
             "answers": ["Yes", "No"], # only single
-            "required": true
+            "required": True
           },
           {
             "title": "How did you hear about the Virtual Science Forum?",
@@ -144,20 +146,20 @@ def patch_registration_questions(meeting_id) -> int:
                         "One of the organizers",
                         "A colleague (not an organizer)",
                         "Other"],
-            "required": true
+            "required": True
           },
           {
             "title": "Please confirm you have read the participant instructions: \
                       http://virtualscienceforum.org/#/attendeeguide*",
             "type": "short", # short or single
-            "required": true
+            "required": True
           },
         ]
     }
 
-    response = zoom_request(
+    response = common.zoom_request(
         requests.patch,
-        f"{common.ZOOM_API}users/{user_id}/meetings/{meeting_id}/registrants/questions",
+        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants/questions",
         params={"body":request_body}
     )
 
@@ -173,25 +175,22 @@ def patch_registration_notification(meeting_id) -> int:
     }
 
     # Create the meeting
-    response = zoom_request(
+    response = common.zoom_request(
         requests.patch,
-        f"{common.ZOOM_API}users/{user_id}/meetings/{meeting_id}",
+        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}",
         params={"body":request_body}
     )
 
     return response.status
 
 def notify_issue_about_zoom_meeting(repo, talk):
-    issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=meeting_id)
+    issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=talk["meeting_id"])
 
-    try:
-        issue = repo.get_issue(number=talk["workflow_issue"])
-        issue.create_comment(issue_comment)
-    except:
-        print("Couldn't create issue comment. The content would have been: ")
-        print(issue_comment)
+    issue = repo.get_issue(number=talk["workflow_issue"])
+    issue.create_comment(issue_comment)
 
-def notify_author(talk, join_url) -> string:
+
+def notify_author(talk, join_url) -> str:
     # Get the host key
     meeting_host_key = host_key(talk["time"])
 
@@ -214,8 +213,8 @@ def notify_author(talk, join_url) -> string:
         "html": email_text,
     }
 
-    return api_query(
-        post,
+    return common.api_query(
+        requests.post,
         f"{common.MAILGUN_DOMAIN}messages",
         data=data
     )
@@ -229,8 +228,8 @@ def schedule_talks(repo, talks) -> int:
             continue
 
         meeting_id, join_url = schedule_zoom_talk(talk)
-        if( meetind_id ):
-            talk.get("zoom_meeting_id") = meeting_id
+        if meeting_id:
+            talk["zoom_meeting_id"] = meeting_id
             # Add this talk to researchseminars.org
             publish_to_researchseminars(talk)
             # Create comment in issue
@@ -262,7 +261,7 @@ if __name__ == "__main__":
         yaml.dump(talks, serialized)
 
         repo.update_file(
-          TALKS_FILE, f"Added Zoom link{1} for {0} scheduled speakers\'"\
+          common.TALKS_FILE, f"Added Zoom link{1} for {0} scheduled speakers\'"\
                        "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
           serialized.getvalue(),
           sha=talks_data.sha,
