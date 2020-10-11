@@ -27,3 +27,4 @@ jobs:
           VSF_BOT_TOKEN: ${{ secrets.VSF_BOT_TOKEN }}
           ZOOM_API_KEY: ${{ secrets.ZOOM_API_KEY }}
           ZOOM_API_SECRET: ${{ secrets.ZOOM_API_SECRET }}
+          MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
