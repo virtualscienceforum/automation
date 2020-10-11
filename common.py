@@ -1,12 +1,17 @@
 from functools import lru_cache
 import os
 from time import time
+import json
 
 import jwt
 import requests
 
 ZOOM_API = "https://api.zoom.us/v2/"
 SPEAKERS_CORNER_USER_ID = "D0n5UNEHQiajWtgdWLlNSA"
+TALKS_FILE = "speakers_corner_talks.yml"
+
+MAILGUN_BASE_URL = "https://api.eu.mailgun.net/v3/"
+MAILGUN_DOMAIN = "mail.virtualscienceforum.org/"
 
 @lru_cache()
 def zoom_headers(duration: int=100) -> dict:
@@ -31,7 +36,6 @@ def zoom_request(method: callable, *args, **kwargs):
     if response.content:
         return response.json()
 
-
 def speakers_corner_user_id() -> str:
     users = zoom_request(requests.get, ZOOM_API + "users")["users"]
     sc_user_id = next(
@@ -43,7 +47,7 @@ def speakers_corner_user_id() -> str:
 
 def all_meetings(user_id) -> list:
     """Return all meetings by a user.
-    
+
     Handles pagination, and adds ``live: True`` to a meeting that is running (if any).
     """
     meetings = []
@@ -58,7 +62,7 @@ def all_meetings(user_id) -> list:
         next_page_token = meetings_page["next_page_token"]
         if not next_page_token:
             break
-    
+
     live_meetings = zoom_request(
         requests.get,
         f"{ZOOM_API}users/{user_id}/meetings",
@@ -69,5 +73,19 @@ def all_meetings(user_id) -> list:
         for meeting in meetings:
             if meeting["id"] == live_meetings[0]["id"]:
                 meeting["live"] = True
-        
+
     return meetings
+
+
+def decode(response):
+    if response.status_code > 299:  # Not OK
+        raise RuntimeError(response.content.decode())
+    return json.loads(response.content.decode())
+
+
+def api_query(method, endpoint, **params):
+    return decode(method(
+        MAILGUN_BASE_URL + endpoint,
+        auth=("api", os.getenv("MAILGUN_API_KEY")),
+        **params
+    ))
