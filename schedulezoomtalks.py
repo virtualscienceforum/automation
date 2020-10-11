@@ -35,7 +35,7 @@ EMAIL_TEMPLATE = jinja2.Template(
    - The VSF team
    """)
 
-def schedule_zoom_talk(talk) -> string:
+def schedule_zoom_talk(talk) -> Tuple[string, string]:
 
     # Form the talk registration body
     request_body =
@@ -101,7 +101,7 @@ def schedule_zoom_talk(talk) -> string:
     # Update the registrants email notification
     patch_registration_notification(meeting_id)
 
-    return meeting_id
+    return meeting_id, response.join_url
 
 def register_speaker(meeting_id, talk) -> int:
 
@@ -191,7 +191,7 @@ def notify_issue_about_zoom_meeting(repo, talk):
         print("Couldn't create issue comment. The content would have been: ")
         print(issue_comment)
 
-def notify_author(talk) -> string:
+def notify_author(talk, join_url) -> string:
     # Get the host key
     meeting_host_key = host_key(talk["time"])
 
@@ -199,7 +199,7 @@ def notify_author(talk) -> string:
     meeting_start = datetime.datetime(talk["time"], tz=pytz.UTC)
     meeting_end = meeting_start + datetime.timedelta(hours=1)
     email_text = EMAIL_TEMPLATE.render(author=talk["speaker_name"],
-                                       meeting_zoom_link="",
+                                       meeting_zoom_link=join_url,
                                        meeting_host_key=meeting_host_key,
                                        meeting_talk_title=talk["title"],
                                        meeting_date=meeting_start.date,
@@ -228,14 +228,15 @@ def schedule_talks(repo, talks) -> int:
         if "zoom_meeting_id" in talk or talk["event_type"] != "speakers_corner":
             continue
 
-        if( meetind_id := schedule_zoom_talk(talk) ):
+        meeting_id, join_url = schedule_zoom_talk(talk)
+        if( meetind_id ):
             talk.get("zoom_meeting_id") = meeting_id
             # Add this talk to researchseminars.org
             publish_to_researchseminars(talk)
             # Create comment in issue
             notify_issue_about_zoom_meeting(repo, talk)
             # Email the author
-            notify_author(talk)
+            notify_author(talk, join_url)
 
             num_updated += 1
 
