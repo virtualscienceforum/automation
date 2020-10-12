@@ -34,7 +34,7 @@ Your meeting information:
 
 Talk title: {{ meeting_talk_title }}
 
-Date: {{ meeting_date }}
+Date: {{ meeting_date }} (yyyy-mm-dd)
 
 Time slot: {{ meeting_start }} - {{ meeting_end }}
 
