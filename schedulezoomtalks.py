@@ -56,7 +56,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
       # Generate a password for the meeting. This is required since
       # otherwise the meeting room will be forced. Zoom limits the
       # password length to max 10 characters.
-      "password": secrets.token_urlsafe(10),
+      "password": secrets.token_urlsafe(9),
 
       # Meeting settings
       "settings": {
@@ -87,7 +87,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
         "contact_email": "vsf@virtualscienceforum.org",
       }
     }
-    
+
     # Create the meeting
     response = common.zoom_request(
         requests.post,
