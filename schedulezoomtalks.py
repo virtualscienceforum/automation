@@ -46,7 +46,7 @@ Thank you in advance for contributing to the Speakers' Corner!
 def schedule_zoom_talk(talk) -> Tuple[str, str]:
 
     # Form the talk registration body
-    request_body = {
+   request_body = {
       "topic": "Speakers\' corner talk by %s"%(talk.get("name")),
       "type": 2, # Scheduled meeting
       "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
@@ -89,10 +89,10 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
       },
     }
    
-   print(talk["time"])
-   print(request_body["start_time"])
-   print(request_body)
-   print(json.dumps(request_body))
+    print(talk["time"])
+    print(request_body["start_time"])
+    print(request_body)
+    print(json.dumps(request_body))
 
     # Create the meeting
     response = common.zoom_request(
