@@ -231,7 +231,7 @@ def schedule_talks(repo, talks) -> int:
             # Add this talk to researchseminars.org
             # publish_to_researchseminars(talk)
             # Create comment in issue
-            notify_issue_about_zoom_meeting(repo, talk)
+    #        notify_issue_about_zoom_meeting(repo, talk)
             # Email the author
             notify_author(talk, join_url)
 
