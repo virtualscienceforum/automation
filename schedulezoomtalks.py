@@ -182,7 +182,7 @@ def patch_registration_notification(meeting_id):
     return response
 
 def notify_issue_about_zoom_meeting(repo, talk):
-    issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=talk["meeting_id"])
+    issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=talk["zoom_meeting_id"])
 
     issue = repo.get_issue(number=talk["workflow_issue"])
     issue.create_comment(issue_comment)
