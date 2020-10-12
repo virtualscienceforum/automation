@@ -4,3 +4,4 @@ python-dateutil
 PyJWT
 PyGithub
 PyYAML
+ruamel.yaml
