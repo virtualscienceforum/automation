@@ -88,6 +88,11 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
         "contact_email": "vsf@virtualscienceforum.org",
       },
     }
+   
+   print(talk["time"])
+   print(request_body["start_time"])
+   print(request_body)
+   print(json.dumps(request_body))
 
     # Create the meeting
     response = common.zoom_request(
