@@ -102,11 +102,11 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
 
     meeting_id = response["id"]
 
-    register_speaker(meeting_id, talk)
+    speaker_join_url = register_speaker(meeting_id, talk)["join_url"]
     patch_registration_questions(meeting_id)
     patch_registration_notification(meeting_id)
 
-    return meeting_id, response["registration_url"]
+    return meeting_id, response["registration_url"], speaker_join_url
 
 
 def register_speaker(meeting_id, talk):
@@ -124,8 +124,8 @@ def register_speaker(meeting_id, talk):
 
     return response
 
-def patch_registration_questions(meeting_id):
 
+def patch_registration_questions(meeting_id):
     request_body = {
         "questions": [
           {"field_name": "org", "required": True},
@@ -164,6 +164,7 @@ def patch_registration_questions(meeting_id):
 
     return response
 
+
 def patch_registration_notification(meeting_id):
 
     # Form the talk registration body
@@ -176,11 +177,12 @@ def patch_registration_notification(meeting_id):
     # Create the meeting
     response = common.zoom_request(
         requests.patch,
-        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}",
+        f"{common.ZOOM_API}meetings/{meeting_id}",
         data=json.dumps(request_body)
     )
 
     return response
+
 
 def notify_issue_about_zoom_meeting(repo, talk):
     issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=talk["zoom_meeting_id"])
@@ -228,13 +230,14 @@ def schedule_talks(repo, talks) -> int:
         if "zoom_meeting_id" in talk or talk["event_type"] != "speakers_corner":
             continue
 
-        meeting_id, join_url = schedule_zoom_talk(talk)
+        meeting_id, registration_url, join_url = schedule_zoom_talk(talk)
         if meeting_id:
             talk["zoom_meeting_id"] = meeting_id
+            talk["registration_url"] = registration_url
             # Add this talk to researchseminars.org
             # publish_to_researchseminars(talk)
             # Create comment in issue
-    #        notify_issue_about_zoom_meeting(repo, talk)
+            notify_issue_about_zoom_meeting(repo, talk)
             # Email the author
             notify_author(talk, join_url)
 
