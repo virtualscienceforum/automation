@@ -87,15 +87,12 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
         "contact_email": "vsf@virtualscienceforum.org",
       }
     }
-
-    print(request_body)
-    print(json.dumps(request_body))
-
+    
     # Create the meeting
     response = common.zoom_request(
         requests.post,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings",
-        params={"body":json.dumps(request_body)}
+        data=json.dumps(request_body)
     )
 
     meeting_id = response["id"]
