@@ -259,7 +259,7 @@ if __name__ == "__main__":
         yaml.dump(talks, serialized)
 
         repo.update_file(
-          common.TALKS_FILE, f"Added Zoom link{1} for {0} scheduled speakers\'"\
+          common.TALKS_FILE, "Added Zoom link{1} for {0} scheduled speakers\' "\
                        "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
           serialized.getvalue(),
           sha=talks_data.sha,
