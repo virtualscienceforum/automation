@@ -114,7 +114,7 @@ def register_speaker(meeting_id, talk) -> int:
     response = common.zoom_request(
         requests.post,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants",
-        params={"body":json.dumps(request_payload)}
+        data=json.dumps(request_payload)
     )
 
     return response.status
@@ -159,7 +159,7 @@ def patch_registration_questions(meeting_id) -> int:
     response = common.zoom_request(
         requests.patch,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants/questions",
-        params={"body":json.dumps(request_body)}
+        pdata=json.dumps(request_body)
     )
 
     return response.status
@@ -177,7 +177,7 @@ def patch_registration_notification(meeting_id) -> int:
     response = common.zoom_request(
         requests.patch,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}",
-        params={"body":json.dumps(request_body)}
+        data=json.dumps(request_body)
     )
 
     return response.status
