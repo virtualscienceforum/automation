@@ -6,3 +6,4 @@ PyGithub
 PyYAML
 ruamel.yaml
 Jinja2
+Markdown

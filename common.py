@@ -2,6 +2,7 @@ from functools import lru_cache
 import os
 from time import time
 import json
+import markdown
 
 import jwt
 import requests
@@ -76,7 +77,6 @@ def all_meetings(user_id) -> list:
 
     return meetings
 
-
 def decode(response):
     if response.status_code > 299:  # Not OK
         raise RuntimeError(response.content.decode())
@@ -89,3 +89,14 @@ def api_query(method, endpoint, **params):
         auth=("api", os.getenv("MAILGUN_API_KEY")),
         **params
     ))
+
+def markdown_to_email(text):
+    html = markdown.markdown(text)
+    return (
+        '<table cellspacing="0" cellpadding="0" border="0"><tr>'
+        '<td style="word-break:normal;border-collapse:collapse!important;max-width:600px">'
+        f'{html}</td></tr></table>'
+    )
+
+def markdown_to_plain(text):
+    return text.replace('[', '').replace(']', ' ').replace('  \n', '\n').replace('*', '')

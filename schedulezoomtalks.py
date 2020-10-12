@@ -207,8 +207,8 @@ def notify_author(talk, join_url) -> str:
         "from": "Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
         "to": "{0} <{1}>".format(talk["speaker_name"], talk["email"]),
         "subject": "Speakers' Corner talk",
-        "text": email_text,
-        "html": email_text,
+        "text": common.markdown_to_plain(email_text),
+        "html": common.markdown_to_email(email_text),
     }
 
     return common.api_query(
