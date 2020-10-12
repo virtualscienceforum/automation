@@ -104,7 +104,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
     return meeting_id, response["registration_url"]
 
 
-def register_speaker(meeting_id, talk) -> int:
+def register_speaker(meeting_id, talk):
     request_payload = {
       "email": talk["email"],
       "first_name": talk["speaker_name"],
@@ -117,8 +117,7 @@ def register_speaker(meeting_id, talk) -> int:
         data=json.dumps(request_payload)
     )
 
-    return response.status
-
+    return response
 
 def patch_registration_questions(meeting_id) -> int:
 
