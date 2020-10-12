@@ -119,7 +119,7 @@ def register_speaker(meeting_id, talk):
 
     return response
 
-def patch_registration_questions(meeting_id) -> int:
+def patch_registration_questions(meeting_id):
 
     request_body = {
         "questions": [
@@ -161,9 +161,9 @@ def patch_registration_questions(meeting_id) -> int:
         data=json.dumps(request_body)
     )
 
-    return response.status
+    return response
 
-def patch_registration_notification(meeting_id) -> int:
+def patch_registration_notification(meeting_id):
 
     # Form the talk registration body
     request_body = {
@@ -179,7 +179,7 @@ def patch_registration_notification(meeting_id) -> int:
         data=json.dumps(request_body)
     )
 
-    return response.status
+    return response
 
 def notify_issue_about_zoom_meeting(repo, talk):
     issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=talk["meeting_id"])
