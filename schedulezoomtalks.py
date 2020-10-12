@@ -118,7 +118,7 @@ def register_speaker(meeting_id, talk):
     # Send request
     response = common.zoom_request(
         requests.post,
-        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants",
+        f"{common.ZOOM_API}meetings/{meeting_id}/registrants",
         data=json.dumps(request_payload)
     )
 
@@ -128,11 +128,7 @@ def patch_registration_questions(meeting_id):
 
     request_body = {
         "questions": [
-          {"field_name": "First Name", "required": True},
-          {"field_name": "Last Name", "required": True},
-          {"field_name": "Email Address", "required": True},
-          {"field_name": "Confirm Email Address", "required": True},
-          {"field_name": "Organization", "required": True},
+          {"field_name": "org", "required": True},
         ],
 
         "custom_questions": [
@@ -162,7 +158,7 @@ def patch_registration_questions(meeting_id):
 
     response = common.zoom_request(
         requests.patch,
-        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants/questions",
+        f"{common.ZOOM_API}meetings/{meeting_id}/registrants/questions",
         data=json.dumps(request_body)
     )
 
