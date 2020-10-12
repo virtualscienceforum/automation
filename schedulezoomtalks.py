@@ -158,7 +158,7 @@ def patch_registration_questions(meeting_id) -> int:
     response = common.zoom_request(
         requests.patch,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants/questions",
-        pdata=json.dumps(request_body)
+        data=json.dumps(request_body)
     )
 
     return response.status
