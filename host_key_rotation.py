@@ -34,7 +34,7 @@ def update_host_key():
 
 def rotate_meetings():
     """Update the Speakers' corner meeting settings and statuses.
-    
+
     1. If there is an upcoming meeting in less than an hour, allow joining
        before host.
     2. Stop the running meeting if there is an upcoming one or if it runs for too long.
@@ -56,7 +56,7 @@ def rotate_meetings():
     except ValueError:
         upcoming = None
         upcoming_start = now + datetime.timedelta(weeks=1)
-    
+
     recent = [
         m for m in sc_meetings
         if (now > m["start_time"] > now - datetime.timedelta(hours=2))
@@ -74,7 +74,7 @@ def rotate_meetings():
     if (
         live
         and (
-            starting_soon 
+            starting_soon
             or live[0]["start_time"] < now - datetime.timedelta(minutes=90)
         )
     ):
