@@ -46,7 +46,7 @@ Thank you in advance for contributing to the Speakers' Corner!
 def schedule_zoom_talk(talk) -> Tuple[str, str]:
     # Form the talk registration body
     request_body = {
-      "topic": "Speakers\' corner talk by %s"%(talk["speaker_name"])),
+      "topic": "Speakers\' corner talk by %s"%(talk["speaker_name"]),
       "type": 2, # Scheduled meeting
       "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
       "timezone": "UTC",
