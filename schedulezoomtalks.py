@@ -46,7 +46,7 @@ Thank you in advance for contributing to the Speakers' Corner!
 def schedule_zoom_talk(talk) -> Tuple[str, str]:
     # Form the talk registration body
     request_body = {
-      "topic": "Speakers\' corner talk by %s"%(talk.get("name")),
+      "topic": "Speakers\' corner talk by %s"%(talk["speaker_name"])),
       "type": 2, # Scheduled meeting
       "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
       "timezone": "UTC",
@@ -148,7 +148,7 @@ def patch_registration_questions(meeting_id):
           },
           {
             "title": "Please confirm you have read the participant instructions: \
-                      http://virtualscienceforum.org/#/attendeeguide*",
+                      http://virtualscienceforum.org/#/attendeeguide",
             "type": "short", # short or single
             "required": True
           },
@@ -193,15 +193,17 @@ def notify_author(talk, join_url) -> str:
     meeting_host_key = host_key(talk["time"])
 
     # Format the email body
-    meeting_start = talk["time"]
-    meeting_end = meeting_start + datetime.timedelta(hours=1)
+    meeting_start = talk["time"].strftime('%H:%M')
+    meeting_end = (meeting_start + datetime.timedelta(hours=1)).strftime('%H:%M')
+    meeting_date = talk["time"].strftime('%Y-%m-%d')
+
     email_text = EMAIL_TEMPLATE.render(author=talk["speaker_name"],
                                        meeting_zoom_link=join_url,
                                        meeting_host_key=meeting_host_key,
                                        meeting_talk_title=talk["title"],
-                                       meeting_date=meeting_start.date,
-                                       meeting_start=meeting_start.time,
-                                       meeting_end=meeting_end.time)
+                                       meeting_date=meeting_date,
+                                       meeting_start=meeting_start,
+                                       meeting_end=meeting_end)
 
     data = {
         "from": "Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
