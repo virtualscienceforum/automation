@@ -56,7 +56,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
       # Generate a password for the meeting. This is required since
       # otherwise the meeting room will be forced. Zoom limits the
       # password length to max 10 characters.
-      "password": secrets.token_urlsafe(9),
+      "password": secrets.token_urlsafe(16)[:10],
 
       # Meeting settings
       "settings": {
