@@ -49,7 +49,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
     request_body = {
       "topic": "Speakers\' corner talk by %s"%(talk.get("name")),
       "type": 2, # Scheduled meeting
-      "start_time": talk["time"],
+      "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
       "timezone": "UTC",
       "duration": 60,
       "schedule_for": common.SPEAKERS_CORNER_USER_ID,
