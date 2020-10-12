@@ -89,6 +89,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
     }
 
     print(request_body)
+    print(json.dumps(request_body))
 
     # Create the meeting
     response = common.zoom_request(
@@ -196,7 +197,7 @@ def notify_author(talk, join_url) -> str:
     meeting_host_key = host_key(talk["time"])
 
     # Format the email body
-    meeting_start = datetime.datetime(talk["time"], tz=pytz.UTC)
+    meeting_start = talk["time"]
     meeting_end = meeting_start + datetime.timedelta(hours=1)
     email_text = EMAIL_TEMPLATE.render(author=talk["speaker_name"],
                                        meeting_zoom_link=join_url,
