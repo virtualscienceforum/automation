@@ -3,7 +3,7 @@ import secrets
 from io import StringIO
 from typing import Tuple
 import datetime
-
+import json
 import github
 import requests
 from ruamel.yaml import YAML
@@ -93,7 +93,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
     response = common.zoom_request(
         requests.post,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings",
-        params={"body":request_body}
+        params={"body":json.dumps(request_body)}
     )
 
     meeting_id = response["id"]
@@ -115,7 +115,7 @@ def register_speaker(meeting_id, talk) -> int:
     response = common.zoom_request(
         requests.post,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants",
-        params={"body": request_payload}
+        params={"body":json.dumps(request_payload)}
     )
 
     return response.status
@@ -160,7 +160,7 @@ def patch_registration_questions(meeting_id) -> int:
     response = common.zoom_request(
         requests.patch,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}/registrants/questions",
-        params={"body":request_body}
+        params={"body":json.dumps(request_body)}
     )
 
     return response.status
@@ -178,7 +178,7 @@ def patch_registration_notification(meeting_id) -> int:
     response = common.zoom_request(
         requests.patch,
         f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings/{meeting_id}",
-        params={"body":request_body}
+        params={"body":json.dumps(request_body)}
     )
 
     return response.status
