@@ -20,7 +20,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Schedule talks
-        run: python3 schedulezoomtalks.py
+        run: python schedulezoomtalks.py
         env:
           VSF_BOT_TOKEN: ${{ secrets.VSF_BOT_TOKEN }}
           ZOOM_API_KEY: ${{ secrets.ZOOM_API_KEY }}
