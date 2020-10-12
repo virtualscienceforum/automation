@@ -31,14 +31,19 @@ be terminated. Once the recording finishes processing, you will get the
 opportunity to cut out parts of it.
 
 Your meeting information:
+
 Talk title: {{ meeting_talk_title }}
+
 Date: {{ meeting_date }}
+
 Time slot: {{ meeting_start }} - {{ meeting_end }}
 
 Zoom link: {{ meeting_zoom_link }}
+
 Host key: {{ meeting_host_key }}
 
 Thank you in advance for contributing to the Speakers' Corner!
+
 - The VSF team
 """)
 
