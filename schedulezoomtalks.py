@@ -194,7 +194,7 @@ def notify_author(talk, join_url) -> str:
 
     # Format the email body
     meeting_start = talk["time"].strftime('%H:%M')
-    meeting_end = (meeting_start + datetime.timedelta(hours=1)).strftime('%H:%M')
+    meeting_end = (talk["time"] + datetime.timedelta(hours=1)).strftime('%H:%M')
     meeting_date = talk["time"].strftime('%Y-%m-%d')
 
     email_text = EMAIL_TEMPLATE.render(author=talk["speaker_name"],
