@@ -16,9 +16,9 @@ from host_key_rotation import host_key
 
 
 ISSUE_RESPONSE_TEMPLATE = jinja2.Template(
-"""I've now created a Zoom meeting for your talk, with meeting ID
-   {{ meeting_id }}. You'll receive a separate email with a host key.
-""")
+"I've now created a Zoom meeting for your talk, with meeting ID "
+"{{ meeting_id }}. You'll receive a separate email with a host key."
+)
 
 EMAIL_TEMPLATE = jinja2.Template(
 """Hi {{ author }},
@@ -47,50 +47,84 @@ Thank you in advance for contributing to the Speakers' Corner!
 - The VSF team
 """)
 
+REGISTRATION_QUESTIONS = {
+    "questions": [
+        {"field_name": "org", "required": True},
+    ],
+
+    "custom_questions": [
+        {
+            "title": "May we contact you about future Virtual Science Forum events?",
+            "type": "single",
+            "answers": ["Yes", "No"],
+            "required": False,
+        },
+        {
+            "title": "How did you hear about the Virtual Science Forum?",
+            "type": "single",
+            "answers": [
+                "Email list",
+                "One of the organizers",
+                "A colleague (not an organizer)",
+                "Other",
+            ],
+            "required": False,
+        },
+        {
+            "title": "Please confirm you agree to follow the participant instructions: \
+                      http://virtualscienceforum.org/#/attendeeguide",
+            "type": "single",
+            "answers": ["Yes", "Yes"],
+            "required": True,
+        },
+    ]
+}
+
+
 
 def schedule_zoom_talk(talk) -> Tuple[str, str]:
     # Form the talk registration body
     request_body = {
-      "topic": "Speakers\' corner talk by %s"%(talk["speaker_name"]),
-      "type": 2, # Scheduled meeting
-      "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
-      "timezone": "UTC",
-      "duration": 60,
-      "schedule_for": common.SPEAKERS_CORNER_USER_ID,
+        "topic": "Speakers\' corner talk by %s"%(talk["speaker_name"]),
+        "type": 2, # Scheduled meeting
+        "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
+        "timezone": "UTC",
+        "duration": 60,
+        "schedule_for": common.SPEAKERS_CORNER_USER_ID,
 
-      # Generate a password for the meeting. This is required since
-      # otherwise the meeting room will be forced. Zoom limits the
-      # password length to max 10 characters.
-      "password": secrets.token_urlsafe(16)[:10],
+        # Generate a password for the meeting. This is required since
+        # otherwise the meeting room will be forced. Zoom limits the
+        # password length to max 10 characters.
+        "password": secrets.token_urlsafe(16)[:10],
 
-      # Meeting settings
-      "settings": {
-        "host_video": True,
-        "participant_video": False,
-        "cn_meeting": False,  # Host the meeting in China?
-        "in_meeting": False,  # Host the meeting in India?
+        # Meeting settings
+        "settings": {
+            "host_video": True,
+            "participant_video": False,
+            "cn_meeting": False,  # Host the meeting in China?
+            "in_meeting": False,  # Host the meeting in India?
 
-        # This will be switched to True shortly before the meeting starts
-        # by the VSF bot. It will also be switched back to False afterwards
-        "join_before_host": False,
-        "mute_upon_entry": True,
-        "watermark": False,  # Don't add a watermark when screensharing
-        "use_pmi": False, # Don't use Personal Meeting ID, but generate one
-        "approval_type": 0, # Automatically approve
-        "close_registration" : True, # Close registration after event date
-        "waiting_room" : False,    # No waiting room
-        "audio": "both",
-        "auto_recording": "cloud",
-        "enforce_login": False,
-        "alternative_hosts": "",
+            # This will be switched to True shortly before the meeting starts
+            # by the VSF bot. It will also be switched back to False afterwards
+            "join_before_host": False,
+            "mute_upon_entry": True,
+            "watermark": False,  # Don't add a watermark when screensharing
+            "use_pmi": False, # Don't use Personal Meeting ID, but generate one
+            "approval_type": 0, # Automatically approve
+            "close_registration" : True, # Close registration after event date
+            "waiting_room" : False,    # No waiting room
+            "audio": "both",
+            "auto_recording": "cloud",
+            "enforce_login": False,
+            "alternative_hosts": "",
 
-        # Email notifications are turned off when created, so that we can
-        # register the speaker without them receiving an invitation to
-        # their own talk. They will receive a separate email with info.
-        # This will be turned on with a PATCH once the speaker is registered.
-        "registrants_email_notification": False,
-        "contact_email": "vsf@virtualscienceforum.org",
-      }
+            # Email notifications are turned off when created, so that we can
+            # register the speaker without them receiving an invitation to
+            # their own talk. They will receive a separate email with info.
+            # This will be turned on with a PATCH once the speaker is registered.
+            "registrants_email_notification": False,
+            "contact_email": "vsf@virtualscienceforum.org",
+        }
     }
 
     # Create the meeting
@@ -111,8 +145,9 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
 
 def register_speaker(meeting_id, talk):
     request_payload = {
-      "email": talk["email"],
-      "first_name": talk["speaker_name"],
+        "email": talk["email"],
+        "first_name": talk["speaker_name"],
+        "org": talk["speaker_affiliation"]
     }
 
     # Send request
@@ -126,40 +161,10 @@ def register_speaker(meeting_id, talk):
 
 
 def patch_registration_questions(meeting_id):
-    request_body = {
-        "questions": [
-          {"field_name": "org", "required": True},
-        ],
-
-        "custom_questions": [
-          {
-            "title": "May we contact you about future Virtual Science Forum events?",
-            "type": "single", # short or single
-            "answers": ["Yes", "No"], # only single
-            "required": True
-          },
-          {
-            "title": "How did you hear about the Virtual Science Forum?",
-            "type": "single", # short or single
-            "answers": ["Email list",
-                        "One of the organizers",
-                        "A colleague (not an organizer)",
-                        "Other"],
-            "required": True
-          },
-          {
-            "title": "Please confirm you have read the participant instructions: \
-                      http://virtualscienceforum.org/#/attendeeguide",
-            "type": "short", # short or single
-            "required": True
-          },
-        ]
-    }
-
     response = common.zoom_request(
         requests.patch,
         f"{common.ZOOM_API}meetings/{meeting_id}/registrants/questions",
-        data=json.dumps(request_body)
+        data=json.dumps(REGISTRATION_QUESTIONS)
     )
 
     return response
@@ -169,9 +174,9 @@ def patch_registration_notification(meeting_id):
 
     # Form the talk registration body
     request_body = {
-      "settings": {
-        "registrants_email_notification": True,
-      },
+        "settings": {
+            "registrants_email_notification": True,
+        },
     }
 
     # Create the meeting
@@ -265,9 +270,9 @@ if __name__ == "__main__":
         yaml.dump(talks, serialized)
 
         repo.update_file(
-          common.TALKS_FILE, "Added Zoom link{1} for {0} scheduled speakers\' "\
-                       "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
-          serialized.getvalue(),
-          sha=talks_data.sha,
-          branch='test_zoom_meeting_registering_workflow'
+            common.TALKS_FILE, "Added Zoom link{1} for {0} scheduled speakers\' "\
+                        "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
+            serialized.getvalue(),
+            sha=talks_data.sha,
+            branch='test_zoom_meeting_registering_workflow'
         )
