@@ -253,12 +253,13 @@ def schedule_talks(repo, talks) -> int:
 if __name__ == "__main__":
     # Get a handle on the repository
     gh = github.Github(os.getenv("VSF_BOT_TOKEN"))
+    target_branch = "test_zoom_meeting_registering_workflow"
     repo = gh.get_repo("virtualscienceforum/virtualscienceforum")
 
     # Read the talks file
     yaml = YAML()
     try:
-        talks_data = repo.get_contents(common.TALKS_FILE, ref="test_zoom_meeting_registering_workflow")
+        talks_data = repo.get_contents(common.TALKS_FILE, ref=target_branch)
         talks = yaml.load(StringIO(talks_data.decoded_content.decode()))
     except github.UnknownObjectException:
         talks_data = None
@@ -266,13 +267,14 @@ if __name__ == "__main__":
 
     # If we added Zoom links, we should update the file in the repo
     if (num_updated := schedule_talks(repo, talks) ):
+        commit_message = f"add Zoom link{'s' * (num_updated > 1)} for {num_updated} talks"
         serialized = StringIO()
         yaml.dump(talks, serialized)
 
         repo.update_file(
-            common.TALKS_FILE, "Added Zoom link{1} for {0} scheduled speakers\' "\
-                        "corner talk{1}".format(num_updated,'' if num_updated == 1 else 's'),
+            common.TALKS_FILE,
+            commit_message,
             serialized.getvalue(),
             sha=talks_data.sha,
-            branch='test_zoom_meeting_registering_workflow'
+            branch=target_branch,
         )
