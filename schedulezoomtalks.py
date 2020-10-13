@@ -71,8 +71,10 @@ REGISTRATION_QUESTIONS = {
             "required": False,
         },
         {
-            "title": "Please confirm you agree to follow the participant instructions: \
-                      http://virtualscienceforum.org/#/attendeeguide",
+            "title": (
+                "Please confirm you agree to follow the participant instructions: "
+                "http://virtualscienceforum.org/#/attendeeguide"
+            ),
             "type": "single",
             "answers": ["Yes", "Yes"],
             "required": True,
@@ -146,8 +148,17 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
 def register_speaker(meeting_id, talk):
     request_payload = {
         "email": talk["email"],
-        "first_name": talk["speaker_name"],
-        "org": talk["speaker_affiliation"]
+        "first_name": talk["speaker_name"],  # Just use the full name here.
+        "org": talk["speaker_affiliation"],
+        "custom_questions": [
+            {
+                "title": (
+                    "Please confirm you agree to follow the participant instructions: "
+                    "http://virtualscienceforum.org/#/attendeeguide"
+                ),
+                "value": "Yes",
+            }
+        ]
     }
 
     # Send request
@@ -266,7 +277,7 @@ if __name__ == "__main__":
         talks = []
 
     # If we added Zoom links, we should update the file in the repo
-    if (num_updated := schedule_talks(repo, talks) ):
+    if (num_updated := schedule_talks(repo, talks)):
         commit_message = f"add Zoom link{'s' * (num_updated > 1)} for {num_updated} talks"
         serialized = StringIO()
         yaml.dump(talks, serialized)
