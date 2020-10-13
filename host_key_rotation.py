@@ -60,7 +60,7 @@ def rotate_meetings():
     recent = [
         m for m in sc_meetings
         if (now > m["start_time"] > now - datetime.timedelta(hours=2))
-        and not m["live"]
+        and not m.get("live")
     ]
 
     starting_soon = upcoming_start - now < datetime.timedelta(hours=1)
