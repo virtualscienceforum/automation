@@ -15,36 +15,25 @@ from researchseminarsdotorg import publish_to_researchseminars
 from host_key_rotation import host_key
 
 
-ISSUE_RESPONSE_TEMPLATE = jinja2.Template(
-"I've now created a Zoom meeting for your talk, with meeting ID "
-"{{ meeting_id }}. You'll receive a separate email with a host key."
-)
-
 EMAIL_TEMPLATE = jinja2.Template(
-"""Hi {{ author }},
+"""Dear {{ author }},
 
-A Zoom meeting has now been scheduled for your Speakers' Corner talk.
-Five minutes before your timeslot starts, you and your audience will be
-able to join the meeting. You will then be able to claim the host role by
-using the host key below. After an hour the meeting will automatically
-be terminated. Once the recording finishes processing, you will get the
-opportunity to cut out parts of it.
+We scheduled a Zoom meeting for your Speakers' Corner talk and opened the
+registration for it. Below please find the relevant information that you will
+need. We have also posted step by step instructions for the next steps in your
+[application]({{issue_url}}). Please read those carefully and comment there if
+you have any questions.
 
 Your meeting information:
 
-Talk title: {{ meeting_talk_title }}
+- Talk title: {{ meeting_talk_title }}
+- Date: {{ meeting_date }} (yyyy-mm-dd)
+- Time slot: {{ meeting_start }}—{{ meeting_end }}
+- Your personal zoom link: {{ meeting_zoom_link }}
+- Host key: {{ meeting_host_key }}
 
-Date: {{ meeting_date }} (yyyy-mm-dd)
-
-Time slot: {{ meeting_start }} - {{ meeting_end }}
-
-Zoom link: {{ meeting_zoom_link }}
-
-Host key: {{ meeting_host_key }}
-
-Thank you in advance for contributing to the Speakers' Corner!
-
-- The VSF team
+Thank you in advance for contributing to the Speakers' Corner!  
+The VSF team
 """)
 
 REGISTRATION_QUESTIONS = {
@@ -204,14 +193,7 @@ def patch_registration_notification(meeting_id):
     return response
 
 
-def notify_issue_about_zoom_meeting(repo, talk):
-    issue_comment = ISSUE_RESPONSE_TEMPLATE.render(meeting_id=talk["zoom_meeting_id"])
-
-    issue = repo.get_issue(number=talk["workflow_issue"])
-    issue.create_comment(issue_comment)
-
-
-def notify_author(talk, join_url) -> str:
+def notify_author(talk, join_url, issue_url) -> str:
     # Get the host key
     meeting_host_key = host_key(talk["time"])
 
@@ -220,13 +202,16 @@ def notify_author(talk, join_url) -> str:
     meeting_end = (talk["time"] + datetime.timedelta(hours=1)).strftime('%H:%M')
     meeting_date = talk["time"].strftime('%Y-%m-%d')
 
-    email_text = EMAIL_TEMPLATE.render(author=talk["speaker_name"],
-                                       meeting_zoom_link=join_url,
-                                       meeting_host_key=meeting_host_key,
-                                       meeting_talk_title=talk["title"],
-                                       meeting_date=meeting_date,
-                                       meeting_start=meeting_start,
-                                       meeting_end=meeting_end)
+    email_text = EMAIL_TEMPLATE.render(
+        author=talk["speaker_name"],
+        meeting_zoom_link=join_url,
+        meeting_host_key=meeting_host_key,
+        meeting_talk_title=talk["title"],
+        meeting_date=meeting_date,
+        meeting_start=meeting_start,
+        meeting_end=meeting_end,
+        issue_url=issue_url,
+    )
 
     data = {
         "from": "Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
@@ -256,10 +241,9 @@ def schedule_talks(repo, talks) -> int:
             talk["registration_url"] = registration_url
             # Add this talk to researchseminars.org
             # publish_to_researchseminars(talk)
-            # Create comment in issue
-            # notify_issue_about_zoom_meeting(repo, talk)
+            issue = repo.get_issue(number=talk["workflow_issue"])
             # Email the author
-            notify_author(talk, join_url)
+            notify_author(talk, join_url, issue.html_url)
 
             num_updated += 1
 
@@ -268,7 +252,7 @@ def schedule_talks(repo, talks) -> int:
 if __name__ == "__main__":
     # Get a handle on the repository
     gh = github.Github(os.getenv("VSF_BOT_TOKEN"))
-    target_branch = "test_zoom_meeting_registering_workflow"
+    target_branch = "master"
     repo = gh.get_repo("virtualscienceforum/virtualscienceforum")
 
     # Read the talks file
@@ -286,10 +270,10 @@ if __name__ == "__main__":
         serialized = StringIO()
         yaml.dump(talks, serialized)
 
-        # repo.update_file(
-        #     common.TALKS_FILE,
-        #     commit_message,
-        #     serialized.getvalue(),
-        #     sha=talks_data.sha,
-        #     branch=target_branch,
-        # )
+        repo.update_file(
+            common.TALKS_FILE,
+            commit_message,
+            serialized.getvalue(),
+            sha=talks_data.sha,
+            branch=target_branch,
+        )
