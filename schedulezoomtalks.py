@@ -155,11 +155,13 @@ def register_speaker(meeting_id, talk):
         "last_name": last_name,
         "org": talk["speaker_affiliation"],
         "custom_questions": [
-            dict(
-                title=question["title"],
-                value=(question["answers"][0] if question["required"] else ""),
-            )
-            for question in REGISTRATION_QUESTIONS["custom_questions"]
+            {
+                "title": (
+                    "Please confirm you agree to follow the participant instructions: "
+                    "http://virtualscienceforum.org/#/attendeeguide"
+                ),
+                "value": "Yes",
+            }
         ]
     }
 
@@ -255,7 +257,7 @@ def schedule_talks(repo, talks) -> int:
             # Add this talk to researchseminars.org
             # publish_to_researchseminars(talk)
             # Create comment in issue
-            notify_issue_about_zoom_meeting(repo, talk)
+            # notify_issue_about_zoom_meeting(repo, talk)
             # Email the author
             notify_author(talk, join_url)
 
@@ -284,10 +286,10 @@ if __name__ == "__main__":
         serialized = StringIO()
         yaml.dump(talks, serialized)
 
-        repo.update_file(
-            common.TALKS_FILE,
-            commit_message,
-            serialized.getvalue(),
-            sha=talks_data.sha,
-            branch=target_branch,
-        )
+        # repo.update_file(
+        #     common.TALKS_FILE,
+        #     commit_message,
+        #     serialized.getvalue(),
+        #     sha=talks_data.sha,
+        #     branch=target_branch,
+        # )
