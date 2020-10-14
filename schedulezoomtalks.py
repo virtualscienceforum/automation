@@ -138,8 +138,8 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
 
     meeting_id = response["id"]
 
-    speaker_join_url = register_speaker(meeting_id, talk)["join_url"]
     patch_registration_questions(meeting_id)
+    speaker_join_url = register_speaker(meeting_id, talk)["join_url"]
     patch_registration_notification(meeting_id)
 
     return meeting_id, response["registration_url"], speaker_join_url
