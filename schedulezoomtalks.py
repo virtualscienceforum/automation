@@ -155,13 +155,11 @@ def register_speaker(meeting_id, talk):
         "last_name": last_name,
         "org": talk["speaker_affiliation"],
         "custom_questions": [
-            {
-                "title": (
-                    "Please confirm you agree to follow the participant instructions: "
-                    "http://virtualscienceforum.org/#/attendeeguide"
-                ),
-                "value": "Yes",
-            }
+            dict(
+                title=question["title"],
+                value=(question["answers"][0] if question["required"] else ""),
+            )
+            for question in REGISTRATION_QUESTIONS["custom_questions"]
         ]
     }
 
