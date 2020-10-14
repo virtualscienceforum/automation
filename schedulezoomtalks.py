@@ -146,9 +146,13 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
 
 
 def register_speaker(meeting_id, talk):
+    # The splitting is approximate, and is done merely to satisfy the Zoom
+    # registration requirements
+    first_name, last_name = talk["speaker_name"].split(maxsplit=1) 
     request_payload = {
         "email": talk["email"],
-        "first_name": talk["speaker_name"],  # Just use the full name here.
+        "first_name": first_name,
+        "last_name": last_name,
         "org": talk["speaker_affiliation"],
         "custom_questions": [
             {
