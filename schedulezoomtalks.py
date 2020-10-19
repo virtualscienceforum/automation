@@ -28,7 +28,7 @@ Your meeting information:
 
 - Talk title: {{ meeting_talk_title }}
 - Date: {{ meeting_date }} (yyyy-mm-dd)
-- Time slot: {{ meeting_start }}—{{ meeting_end }}
+- Time slot: {{ meeting_start }}—{{ meeting_end }} UTC
 - Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
 
