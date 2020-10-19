@@ -29,7 +29,7 @@ Your meeting information:
 - Talk title: {{ meeting_talk_title }}
 - Date: {{ meeting_date }} (yyyy-mm-dd)
 - Time slot: {{ meeting_start }}—{{ meeting_end }}
-- Your personal zoom link: {{ meeting_zoom_link }}
+- Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
 
 Thank you in advance for contributing to the Speakers' Corner!  
