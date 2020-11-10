@@ -71,6 +71,7 @@ def rotate_meetings():
             data=json.dumps({"settings": {"join_before_host": True}}),
         )
 
+    running = bool(live)
     if (
         live
         and (
@@ -78,6 +79,7 @@ def rotate_meetings():
             or live[0]["start_time"] < now - datetime.timedelta(minutes=90)
         )
     ):
+        running = False
         for live_meeting in live:
             live_id = live_meeting["id"]
             common.zoom_request(
@@ -97,7 +99,11 @@ def rotate_meetings():
             f"{common.ZOOM_API}meetings/{meeting['id']}",
             data=json.dumps({"settings": {"join_before_host": False}}),
         )
+    
+    return running
+
 
 if __name__ == "__main__":
-    update_host_key()
-    rotate_meetings()
+    meeting_running = rotate_meetings()
+    if not meeting_running:
+        update_host_key()
