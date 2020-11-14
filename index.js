@@ -1,30 +1,116 @@
 const MAILGUN_API_URL = "https://api.eu.mailgun.net/v3"
 const USER = 'api';
-const LIST = 'temporary_test_list'
 const DOMAIN = 'mail.virtualscienceforum.org'
-const ADD_MEMBER_URL = MAILGUN_API_URL + '/lists/' + LIST + '@' + DOMAIN + '/members'
-const GET_LISTS_URL = MAILGUN_API_URL + '/lists/pages'
 const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
 
-const base64encodedData = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
+const mailGunAuthorization = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://virtualscienceforum.org",
+  "Access-Control-Allow-Origin": "https://www.virtualscienceforum.org",
   "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 }
 
-// Method to convert a dictionary
-const urlfy = obj =>
-  Object.keys(obj)
-    .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(obj[k]))
-    .join("&");
+const registrationForm = `
+<!DOCTYPE html>
+<head>
+<script src='https://www.google.com/recaptcha/api.js'></script>
+</head>
+<html>
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}
+* {box-sizing: border-box}
+/* Full-width input fields */
+input[type=text] {
+  width: 100%;
+  padding: 15px;
+  margin: 5px 0 22px 0;
+  display: inline-block;
+  border: none;
+  background: #f1f1f1;
+}
+input[type=text]:focus {
+  background-color: #ddd;
+  outline: none;
+}
+hr {
+  border: 1px solid #f1f1f1;
+  margin-bottom: 25px;
+}
+/* Set a style for all buttons */
+button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 0.9;
+}
+button:hover {
+  opacity:1;
+}
+/* Float registration button and add an equal width */
+.registerbtn {
+  float: left;
+  width: 50%;
+}
+/* Add padding to container elements */
+.container {
+  padding: 16px;
+}
+/* Clear floats */
+.clearfix::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+/* Change styles for cancel button and signup button on extra small screens */
+@media screen and (max-width: 300px) {
+  .cancelbtn, .signupbtn {
+     width: 100%;
+  }
+}
+</style>
+<body>
+<form id="registrationForm" method="post" action="/zoom" style="border:1px solid #ccc">
+  <div class="container">
+    <h1>Sign Up</h1>
+    <p>Please fill in this form to register for $TALK$.</p>
+    <hr>
+    <label for="firstname"><b>First Name</b></label>
+    <input type="text" placeholder="Enter your first name" name="firstname" id="name" required>
+    <label for="lastname"><b>Last Name</b></label>
+    <input type="text" placeholder="Enter your last name" name="lastname" id="name" required>
 
-const welcomeEmail = `
+    <label for="address"><b>Email</b></label>
+    <input type="text" placeholder="Enter your Email" name="address" id="address" required>
+    <label for="addressconfirm"><b>Confirm Email</b></label>
+    <input type="text" placeholder="Confirm your Email" name="addressconfirm" id="address" required>
+
+    <div id="checkboxes">
+        <ul id="checkboxes" style='list-style:none'>
+          <li> <input type="checkbox" name="instructions-checkbox" value="confirm-instructions" required> Please confirm you have read the <a href=http://virtualscienceforum.org/#/attendeeguide>participant instructions*</a> </li>
+          <li> <input type="checkbox" name="contact-checkbox" value="confirm-contact" checked> Please check this box if we may contact you about future VSF events </li>
+        </ul>
+    </div>
+
+    <div id="recaptcha" name="recaptcha" class="g-recaptcha" data-sitekey="6Lf37MoZAAAAAF19QdljioXkLIw23w94QWpy9c5E"></div>
+    <div class="clearfix">
+      <button type="submit" class="registerbtn">Register</button>
+    </div>
+  </div>
+</form>
+</body>
+</html>
+`
+
+const registrationConfirmationEmail = `
   <!DOCTYPE html>
   <html>
   <body>
-  <h1>Welcome to the mailing list</h1>
+  <h1>Thank you for registering</h1>
   <p>Dear NAME,</p>
   <p>THANKYOUMSG</p>
   <p>Kind regards,</p>
@@ -33,8 +119,42 @@ const welcomeEmail = `
   </html>
   `
 
+const welcomeEmail = `
+  <!DOCTYPE html>
+  <html>
+  <body>
+  <h1>Welcome to the mailing list</h1>
+  <p>Dear participant,</p>
+  <p>Thank you for signing up</p>
+  <p>Yours,</p>
+  <p>VSF</p>
+  </body>
+  </html>
+  `
+
+// Method to convert a dictionary
+const urlfy = obj =>
+  Object.keys(obj)
+    .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(obj[k]))
+    .join("&");
+
 // Validate the entries in the form
-function validateFormData(bodydata)
+function validateRegistrationFormData(bodydata)
+{
+  if (!bodydata) return false
+  if (!bodydata.firstname) return false
+  if (!bodydata.lastname) return false
+
+  // Taken from http://emailregex.com/
+  const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  if (!bodydata.address || !emailRegex.test(bodydata.address)) return false
+  if (!bodydata.addressconfirm || !emailRegex.test(bodydata.addressconfirm)) return false
+  if (!(bodydata.address === bodydata.addressconfirm)) return false
+
+  return true
+}
+
+function validateMailingListFormData(bodydata)
 {
   if (!bodydata) return false
   if (!bodydata.name) return false
@@ -46,17 +166,11 @@ function validateFormData(bodydata)
   return true
 }
 
-async function handleRequest(request) {
+async function handleMailingListSignupRequest(request) {
 
   try
   {
-    //
-    // \TODO !! Uncomment the origin checking for the live version !!
-    //
-    // Validate the origin of the request
-    if( request.method === 'POST' ) // && request.url.hostname === '...' && request.url.pathname === '/add')
-    {
-      const formData = await request.formData()
+    const formData = await request.formData()
       const bodydata = {}
       const listsToSubscribeTo = [] // Empty array to hold all the email lists to sign up to
       for (const entry of formData.entries()) {
@@ -71,7 +185,7 @@ async function handleRequest(request) {
       // Toggle subscribed
       bodydata['subscribed'] = true
       // Update user if present
-      bodydata['upsert'] = true      
+      bodydata['upsert'] = true
 
       // Validate the submitted data
       if (!validateFormData(bodydata)) {
@@ -100,7 +214,7 @@ async function handleRequest(request) {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           "Content-Length": bodydata.length,
-          'Authorization': 'Basic ' + base64encodedData,
+          'Authorization': 'Basic ' + mailGunAuthorization,
         },
         body: urlfy(bodydata),
       }
@@ -125,7 +239,7 @@ async function handleRequest(request) {
           return new Response("Error while signing up for " + listsToSubscribeTo[i], {status:response.status, headers:corsHeaders})
         }
       }
-      
+
       // If we get here, we managed to sign up for the lists
       const sendmailresponse = await sendConfirmationEmail(bodydata.address, bodydata.name, listsToSubscribeTo)
       if( sendmailresponse.status != 200 ) {
@@ -141,6 +255,111 @@ async function handleRequest(request) {
   }
 }
 
+async function handleZoomRegistrationRequest(request) {
+
+  try
+  {
+    const formData = await request.formData()
+    const bodydata = {}
+    for (const entry of formData.entries()) {
+      bodydata[entry[0]] = entry[1]
+    }
+
+    // Validate the submitted data
+    if (!validateRegistrationFormData(bodydata)) {
+      return new Response('Invalid submission', { status: 400, headers:corsHeaders })
+    }
+
+    // Extract the recaptcha token
+    const recaptchaToken = bodydata['g-recaptcha-response']
+    if (!recaptchaToken) {
+      return new Response('Invalid reCAPTCHA', { status: 400, headers:corsHeaders })
+    }
+
+    const recaptchaResponse = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHASECRET}&response=${recaptchaToken}`, {
+        method: 'POST'
+    })
+
+    const recaptchaBody = await recaptchaResponse.json()
+    if (recaptchaBody.success == false) {
+      return new Response('reCAPTCHA failed', { status: 400, headers:corsHeaders })
+    }
+
+    // At this point, we passed the captcha and we have valid entries
+
+    const payload = {}
+    payload["first_name"] = bodydata["firstname"]
+    payload["last_name"] = bodydata["lastname"]
+    payload["email"] = bodydata["address"]
+    payload["org"] = bodydata["affiliation"]
+    payload["custom_questions"] = [{
+      "title": "Please confirm you agree to follow the participant instructions: http://virtualscienceforum.org/#/attendeeguide",
+      "value": "Yes",
+      }]
+
+    var jwt = require('jsonwebtoken');
+    var token = jwt.sign({ iss: ZOOMAPIKEY }, ZOOMAPISECRET, { algorithm: 'HS256', expiresIn: '1h' });
+
+    let requestbody = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": payload.length,
+        'Authorization': 'Bearer {' + token + '}'
+      },
+      body: urlfy(payload),
+    }
+
+    // Send to Zoom
+    var registerURL = 'https://api.zoom.us/v2/meetings/' + meetingId + '/registrants'
+    const response = await fetch(registerURL, requestbody)
+
+    // If we get here, we managed to sign up for the lists
+    const sendmailresponse = await sendRegistrationConfirmationEmail(bodydata.address, bodydata.name, "LRC")
+    if( sendmailresponse.status != 200 ) {
+      return new Response("You succesfully registered, but sending the confirmation email failed.", {status:sendmailresponse.status, headers:corsHeaders})
+    }
+    return new Response("Succesfully registered. You will receive a confirmation email.", {status:200, headers:corsHeaders})
+  }
+  catch (err)
+  {
+    console.error(err)
+    return new Response(err.stack, { status: 500, headers:corsHeaders })
+  }
+}
+
+async function sendRegistrationConfirmationEmail(address, name, talk) {
+
+  // Update the template
+  var thankYouMsg = "Thank you for registering for %s"%talk
+  var mailBody = registrationConfirmationEmail.replace("NAME", name)
+  var mailBody = mailBody.replace("THANKYOUMSG", thankYouMsg)
+
+  let bodydata = {
+    from: "mail@virtualscienceforum.org",
+    to: address,
+    subject: "Thank you for registering for the Virtual Sciende Forum LRC",
+    html: mailBody,
+  }
+
+  let bodyoptions = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Length": bodydata.length,
+      'Authorization': 'Basic ' + mailGunAuthorization,
+    },
+    body: urlfy(bodydata),
+  }
+
+  const response = await fetch(SEND_MAIL_URL, bodyoptions)
+  if( response.status != 200 ) {
+    return new Response("Error while sending the confirmation email", {status:response.status, headers:corsHeaders})
+  }
+  return new Response("results", {status:200, headers:corsHeaders})
+}
+
 function getListName(list)
 {
   switch( list ) {
@@ -151,43 +370,52 @@ function getListName(list)
   }
 }
 
-async function sendConfirmationEmail(address, name, lists) {
+async function sendMailingListSignupConfirmationEmail(address, name, lists) {
 
-  // Update the template
-  var thankYouMsg = "Thank you for signing up for ";
-  for( var i = 0; i < lists.length; i++ ) {
-    thankYouMsg += "the " + getListName(lists[i]);
+    // Update the template
+    var thankYouMsg = "Thank you for signing up for ";
+    for( var i = 0; i < lists.length; i++ ) {
+      thankYouMsg += "the " + getListName(lists[i]);
 
-    if( i == lists.length - 2 ) {
-      thankYouMsg += " and "
-    } else if ( i != 0 && i != lists.length - 1) {
-      thankYouMsg += ", "
+      if( i == lists.length - 2 ) {
+        thankYouMsg += " and "
+      } else if ( i != 0 && i != lists.length - 1) {
+        thankYouMsg += ", "
+      }
     }
-  }
-  thankYouMsg += ".";
+    thankYouMsg += ".";
 
-  var mailBody = welcomeEmail.replace("NAME", name)
-  var mailBody = mailBody.replace("THANKYOUMSG", thankYouMsg)
+    var mailBody = welcomeEmail.replace("NAME", name)
+    var mailBody = mailBody.replace("THANKYOUMSG", thankYouMsg)
 
-  let bodydata = {
-    from: "VSF mailing lists <mail@virtualscienceforum.org>",
-    to: address,
-    subject: "You have signed up for a VSF mailing list",
-    html: mailBody,
-  }
+    let bodydata = {
+      from: "VSF mailing lists <mail@virtualscienceforum.org>",
+      to: address,
+      subject: "You have signed up for a VSF mailing list",
+      html: mailBody,
+    }
 
-  let bodyoptions = {
-    method: "POST",
+    let bodyoptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": bodydata.length,
+        'Authorization': 'Basic ' + mailGunAuthorization,
+      },
+      body: urlfy(bodydata),
+    }
+
+    const response = await fetch(SEND_MAIL_URL, bodyoptions)
+    return response
+}
+
+function respondWithRawHTML(html) {
+  const init = {
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Content-Length": bodydata.length,
-      'Authorization': 'Basic ' + base64encodedData,
+      "content-type": "text/html;charset=UTF-8",
     },
-    body: urlfy(bodydata),
   }
-
-  const response = await fetch(SEND_MAIL_URL, bodyoptions)
-  return response
+  return new Response(html, init)
 }
 
 addEventListener("fetch", event => {
@@ -196,10 +424,20 @@ addEventListener("fetch", event => {
   // Extract the url from the request
   const { url } = request
 
-  if (request.method === "POST") {
-    return event.respondWith(handleRequest(request))
+  if (request.method === "POST" )
+  {
+    if( url.includes("zoom")) {
+      return event.respondWith(handleZoomRegistrationRequest(request))
+    }
+    if( url.includes("mailinglist")) {
+      return event.respondWith(handleMailingListSignupRequest(request))
+    }
   }
   else {
+    if(url.includes("zoom"))
+    {
+      return event.respondWith(respondWithRawHTML(registrationForm))
+    }
     return event.respondWith(new Response(`Expecting a POST request`))
   }
 })
