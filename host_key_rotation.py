@@ -207,13 +207,13 @@ if __name__ == "__main__":
                 " that is starting soon."
             )
 
-            common.send_to_participants(
-                template=REMINDER_TEMPLATE,
-                subject=REMINDER_SUBJECT,
-                talk=upcoming_talk,
-                from_email="Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
-            )
-            logging.info(f"Sent a reminder to {talk['zoom_meeting_id']} registrants.")
+            # common.send_to_participants(
+            #     template=REMINDER_TEMPLATE,
+            #     subject=REMINDER_SUBJECT,
+            #     talk=upcoming_talk,
+            #     from_email="Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
+            # )
+            logging.info(f"Sent a reminder to {upcoming_talk['zoom_meeting_id']} registrants.")
         except StopIteration:
             pass
 
