@@ -8,6 +8,7 @@ import markdown
 import jwt
 import requests
 import github
+import pytz
 from ruamel.yaml import YAML
 
 ZOOM_API = "https://api.zoom.us/v2/"
@@ -70,7 +71,10 @@ def talks_data(ref="master", repo=None):
     # Read the talks file
     yaml = YAML()
     talks_data = repo.get_contents(TALKS_FILE, ref=ref)
-    return yaml.load(StringIO(talks_data.decoded_content.decode())), talks_data.sha
+    talks = yaml.load(StringIO(talks_data.decoded_content.decode()))
+    for talk in talks:
+        talk["time"] = talk["time"].replace(tzinfo=pytz.UTC)
+    return talks, talks_data.sha
 
 
 def zoom_request(method: callable, *args, **kwargs):

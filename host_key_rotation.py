@@ -200,19 +200,19 @@ if __name__ == "__main__":
         try:
             upcoming_talk = next(
                 talk for talk in talks
-                if (talk["time"] - now).seconds // 3600 == 2
+                if (talk["time"] - now).total_seconds() // 3600 == 2
             )
             logging.info(
                 f"Found a talk with ID {upcoming_talk['zoom_meeting_id']}"
                 " that is starting soon."
             )
 
-            # common.send_to_participants(
-            #     template=REMINDER_TEMPLATE,
-            #     subject=REMINDER_SUBJECT,
-            #     talk=upcoming_talk,
-            #     from_email="Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
-            # )
+            common.send_to_participants(
+                template=REMINDER_TEMPLATE,
+                subject=REMINDER_SUBJECT,
+                talk=upcoming_talk,
+                from_email="Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
+            )
             logging.info(f"Sent a reminder to {upcoming_talk['zoom_meeting_id']} registrants.")
         except StopIteration:
             pass
