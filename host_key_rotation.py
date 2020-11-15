@@ -4,6 +4,7 @@ import os
 import hashlib
 import datetime
 import json
+import logging
 
 import jinja2
 import requests
@@ -24,6 +25,7 @@ def host_key(timeslot: datetime.datetime) -> int:
 
 def update_host_key():
     """Update the host key of the speakers' corner user for the upcoming hour."""
+    logging.info("Updated the host key.")
     zoom_request(
         requests.patch,
         common.ZOOM_API + "users/" + common.SPEAKERS_CORNER_USER_ID,
@@ -71,6 +73,7 @@ def rotate_meetings():
             f"{common.ZOOM_API}meetings/{upcoming['id']}",
             data=json.dumps({"settings": {"join_before_host": True}}),
         )
+        logging.info("")
 
     running = bool(live)
     if (
@@ -184,6 +187,7 @@ if __name__ == "__main__":
             update_host_key()
 
     talks, _ = common.talks_data()
+    logging.info(f"Loaded {len(talks)} talks.")
     for talk in talks:
         talk["time"] = talk["time"].replace(tzinfo=pytz.UTC)
 
@@ -201,6 +205,7 @@ if __name__ == "__main__":
                 talk=upcoming_talk,
                 from_email="Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
             )
+            logging.info(f"Sent a reminder to {talk['zoom_meeting_id']} registrants.")
         except StopIteration:
             pass
 
@@ -208,5 +213,6 @@ if __name__ == "__main__":
     if now.hour == 20 and now.weekday() == 6:
         with exceptions:
             weekly_speakers_corner_update(talks)
+            logging.info(f"Sent a weekly Speakers' corner announcement")
 
     exceptions.reraise()

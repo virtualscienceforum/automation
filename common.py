@@ -35,10 +35,12 @@ class CollectExceptions:
     def reraise(self):
         if not self.exceptions:
             return
+        elif len(self.exceptions) == 1:
+            raise self.exceptions[0][1]
 
         raise RuntimeError([
-            exc_type(exc_value)
-            for exc_type, exc_value in self.exceptions
+            exc_value
+            for _, exc_value in self.exceptions
         ])
 
 
@@ -154,7 +156,7 @@ def meeting_registrants(zoom_meeting_id: int) -> dict:
     next_page_token = ""
     while True:
         response = requests.get(
-            f"https://api.zoom.us/v2/meetings/{meeting_id}/registrants",
+            f"https://api.zoom.us/v2/meetings/{zoom_meeting_id}/registrants",
             headers=zoom_headers(),
             params={"next_page_token": next_page_token}
         ).json()
