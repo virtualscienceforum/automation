@@ -202,6 +202,10 @@ if __name__ == "__main__":
                 talk for talk in talks
                 if (talk["time"] - now).seconds // 3600 == 2
             )
+            logging.info(
+                f"Found a talk with ID {upcoming_talk['zoom_meeting_id']}"
+                " that is starting soon."
+            )
 
             common.send_to_participants(
                 template=REMINDER_TEMPLATE,
