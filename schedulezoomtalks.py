@@ -251,18 +251,10 @@ def schedule_talks(repo, talks) -> int:
 
 if __name__ == "__main__":
     # Get a handle on the repository
-    gh = github.Github(os.getenv("VSF_BOT_TOKEN"))
     target_branch = "master"
-    repo = gh.get_repo("virtualscienceforum/virtualscienceforum")
-
-    # Read the talks file
+    repo = common.vsf_repo()
+    talks, sha = common.talks_data(repo=repo)
     yaml = YAML()
-    try:
-        talks_data = repo.get_contents(common.TALKS_FILE, ref=target_branch)
-        talks = yaml.load(StringIO(talks_data.decoded_content.decode()))
-    except github.UnknownObjectException:
-        talks_data = None
-        talks = []
 
     # If we added Zoom links, we should update the file in the repo
     if (num_updated := schedule_talks(repo, talks)):
@@ -274,6 +266,6 @@ if __name__ == "__main__":
             common.TALKS_FILE,
             commit_message,
             serialized.getvalue(),
-            sha=talks_data.sha,
+            sha=sha,
             branch=target_branch,
         )
