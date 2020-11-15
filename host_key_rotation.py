@@ -73,7 +73,7 @@ def rotate_meetings():
             f"{common.ZOOM_API}meetings/{upcoming['id']}",
             data=json.dumps({"settings": {"join_before_host": True}}),
         )
-        logging.info("")
+        logging.info(f"Allowed joining {upcoming['id']} before host.")
 
     running = bool(live)
     if (
@@ -96,6 +96,7 @@ def rotate_meetings():
                 f"{common.ZOOM_API}meetings/{live_id}",
                 data=json.dumps({"settings": {"join_before_host": False}}),
             )
+            logging.info(f"Stopped {live_id} and disabled joining.")
 
     for meeting in recent:
         common.zoom_request(
@@ -103,6 +104,7 @@ def rotate_meetings():
             f"{common.ZOOM_API}meetings/{meeting['id']}",
             data=json.dumps({"settings": {"join_before_host": False}}),
         )
+        logging.info(f"Disabled joining {meeting['id']}")
     
     return running
 
@@ -178,6 +180,8 @@ def weekly_speakers_corner_update(talks):
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
     now = datetime.datetime.now(tz=pytz.UTC)
     exceptions = common.CollectExceptions()
 
