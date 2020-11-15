@@ -36,7 +36,7 @@ class CollectExceptions:
         if not self.exceptions:
             return
         elif len(self.exceptions) == 1:
-            raise self.exceptions[0][1]
+            raise RuntimeError() from self.exceptions[0][1]
 
         raise RuntimeError([
             exc_value
