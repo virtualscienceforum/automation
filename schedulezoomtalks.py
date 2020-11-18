@@ -105,7 +105,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
             "close_registration" : True, # Close registration after event date
             "waiting_room" : False,    # No waiting room
             "audio": "both",
-            "auto_recording": "none",
+            "auto_recording": "cloud",
             "enforce_login": False,
             "alternative_hosts": "",
 
