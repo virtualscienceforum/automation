@@ -81,7 +81,8 @@ def talks_data(ref="master", repo=None):
         talk["time"] = datetime.datetime.fromtimestamp(
             talk["time"]
             .replace(tzinfo=datetime.timezone.utc)
-            .timestamp()
+            .timestamp(),
+            tz=datetime.timezone.utc
         )
     return talks, talks_data.sha
 
