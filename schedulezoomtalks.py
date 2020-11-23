@@ -195,9 +195,22 @@ def patch_registration_notification(meeting_id):
     return response
 
 
-def notify_author(talk, join_url, issue_url) -> str:
+def notify_author(talk, join_url=None) -> str:
     # Get the host key
     meeting_host_key = host_key(talk["time"])
+
+    issue_url = (
+        "https://github.com/"
+        "virtualscienceforum/virtualscienceforum/issues/"
+        f"{talk['workflow_issue']}"
+    )
+
+    if join_url is None:
+        join_url = next(
+            p["join_url"]
+            for p in common.meeting_registrants(talk["zoom_meeting_id"])
+            if p["email"] == talk["email"]
+        )
 
     # Format the email body
     meeting_start = talk["time"].strftime('%H:%M')
@@ -243,13 +256,13 @@ def schedule_talks(repo, talks) -> int:
             talk["registration_url"] = registration_url
             # Add this talk to researchseminars.org
             # publish_to_researchseminars(talk)
-            issue = repo.get_issue(number=talk["workflow_issue"])
             # Email the author
-            notify_author(talk, join_url, issue.html_url)
+            notify_author(talk, join_url)
 
             num_updated += 1
 
     return num_updated
+
 
 if __name__ == "__main__":
     # Get a handle on the repository

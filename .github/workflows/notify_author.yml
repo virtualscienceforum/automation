@@ -1,0 +1,33 @@
+name: Resend a notification email to the presenter
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Application issue number
+        required: true
+
+jobs:
+  send_notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Schedule talks
+        run: python share_host_key.py
+        env:
+          ISSUE_NUMBER: ${{ gihtub.event.inputs.issue_number }}
+          VSF_BOT_TOKEN: ${{ secrets.VSF_BOT_TOKEN }}
+          ZOOM_API_KEY: ${{ secrets.ZOOM_API_KEY }}
+          ZOOM_API_SECRET: ${{ secrets.ZOOM_API_SECRET }}
+          MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
