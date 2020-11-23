@@ -17,6 +17,9 @@ from host_key_rotation import host_key
 EMAIL_TEMPLATE = jinja2.Template(
 """Dear {{ author }},
 
+Please respond as soon as possible in your [application issue]({{issue_url}})
+and confirm that you received this email.
+
 We scheduled a Zoom meeting for your Speakers' Corner talk and opened the
 registration for it. Below please find the relevant information that you will
 need. We have also posted step by step instructions for the next steps in your
