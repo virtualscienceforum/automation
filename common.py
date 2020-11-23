@@ -8,8 +8,10 @@ import markdown
 import jwt
 import requests
 import github
-import pytz
+import datetime
 from ruamel.yaml import YAML
+
+yaml = YAML()
 
 ZOOM_API = "https://api.zoom.us/v2/"
 SPEAKERS_CORNER_USER_ID = "D0n5UNEHQiajWtgdWLlNSA"
@@ -69,11 +71,18 @@ def talks_data(ref="master", repo=None):
         repo = vsf_repo()
 
     # Read the talks file
-    yaml = YAML()
     talks_data = repo.get_contents(TALKS_FILE, ref=ref)
     talks = yaml.load(StringIO(talks_data.decoded_content.decode()))
     for talk in talks:
-        talk["time"] = talk["time"].replace(tzinfo=pytz.UTC)
+        # Workaround against issues
+        # https://sourceforge.net/p/ruamel-yaml/tickets/365/
+        # https://sourceforge.net/p/ruamel-yaml/tickets/366
+        # Note that we rely on the current behavior that returns UTC time
+        talk["time"] = datetime.datetime.fromtimestamp(
+            talk["time"]
+            .replace(tzinfo=datetime.timezone.utc)
+            .timestamp()
+        )
     return talks, talks_data.sha
 
 

@@ -6,7 +6,6 @@ import datetime
 import json
 import github
 import requests
-from ruamel.yaml import YAML
 import jinja2
 import pytz
 
@@ -254,7 +253,7 @@ if __name__ == "__main__":
     target_branch = "master"
     repo = common.vsf_repo()
     talks, sha = common.talks_data(repo=repo)
-    yaml = YAML()
+    yaml = common.yaml
 
     # If we added Zoom links, we should update the file in the repo
     if (num_updated := schedule_talks(repo, talks)):
