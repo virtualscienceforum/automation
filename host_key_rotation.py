@@ -179,6 +179,54 @@ def weekly_speakers_corner_update(talks):
     )
 
 
+RECORDING_AVAILABLE_TEMPLATE = jinja2.Template("""Dear {{speaker_name}},
+
+The recording of your talk is available at [this URL]({{share_url}}).
+
+Please review the video, and check if you approve its posting on our youtube channel.
+Because the recording may start too early or end too late, please check the time when
+the posted video should start and end.
+
+After you've done that, please reply in your
+[application issue](https://github.com/virtualscienceforum/virtualscienceforum/issues/{{workflow_issue}})
+with the following phrase:
+
+"I approve publishing of the recording. Talk start is HH:MM:SS, talk end is HH:MM:SS."
+
+Naturally, you may download and use the video for your own purposes.
+
+Best,  
+Virtual Science Forum team
+""")
+
+
+def email_video_link(talk):
+    """Send the presenter a link to their video, asking to confirm."""
+    meeting_recordings = common.zoom_request(
+        requests.get,
+        common.ZOOM_API + f"/meetings/{talk['zoom_meeting_id']}/recordings"
+    )
+    if not len(meeting_recordings["recording_files"]):
+        raise RuntimeError("No recordings found")
+
+    message = RECORDING_AVAILABLE_TEMPLATE.render(
+        share_url=meeting_recordings["share_url"],
+        **talk,
+    )
+
+    return common.api_query(
+        requests.post,
+        common.MAILGUN_DOMAIN + "messages",
+        data={
+            "from": "VSF team <no-reply@mail.virtualscienceforum.org>",
+            "to": f"{talk['speaker_name']} <{talk['email']}>",
+            "subject": "Approve your Speakers' Corner recording",
+            "text": common.markdown_to_plain(message),
+            "html": common.markdown_to_email(message),
+        }
+    )
+
+
 if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -197,11 +245,14 @@ if __name__ == "__main__":
 
     with exceptions:
         # Remind about a talk starting in 2 hours.
-        try:
-            upcoming_talk = next(
+        upcoming_talk = next(
+            (
                 talk for talk in talks
                 if (talk["time"] - now).total_seconds() // 3600 == 2
-            )
+            ),
+            None
+        )
+        if upcoming_talk is not None:
             logging.info(
                 f"Found a talk with ID {upcoming_talk['zoom_meeting_id']}"
                 " that is starting soon."
@@ -213,14 +264,32 @@ if __name__ == "__main__":
                 talk=upcoming_talk,
                 from_email="Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
             )
-            logging.info(f"Sent a reminder to {upcoming_talk['zoom_meeting_id']} registrants.")
-        except StopIteration:
-            pass
+            logging.info(
+                f"Sent a reminder to {upcoming_talk['zoom_meeting_id']} registrants."
+            )
 
     # Weekly emails sent Sunday UTC evening
     if now.hour == 20 and now.weekday() == 6:
         with exceptions:
             weekly_speakers_corner_update(talks)
             logging.info(f"Sent a weekly Speakers' corner announcement")
+
+    # Email the speaker their video link for a talk that took place 10h ago
+    # In principle we could be faster, but this is to guarantee that the
+    # Transcription finished.
+    with exceptions:
+        finished_talk = next(
+            (
+                talk for talk in talks
+                if (now - talk["time"]).total_seconds() // 3600 == 9
+            ),
+            None
+        )
+        if finished_talk is not None:
+            email_video_link(finished_talk)
+            logging.info(
+                "Sent a video link to the speaker from "
+                f"{finished_talk['zoom_meeting_id']}"
+            )
 
     exceptions.reraise()
