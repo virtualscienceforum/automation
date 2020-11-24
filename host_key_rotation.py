@@ -245,11 +245,14 @@ if __name__ == "__main__":
 
     with exceptions:
         # Remind about a talk starting in 2 hours.
-        try:
-            upcoming_talk = next(
+        upcoming_talk = next(
+            (
                 talk for talk in talks
                 if (talk["time"] - now).total_seconds() // 3600 == 2
-            )
+            ),
+            None
+        )
+        if upcoming_talk is not None:
             logging.info(
                 f"Found a talk with ID {upcoming_talk['zoom_meeting_id']}"
                 " that is starting soon."
@@ -261,14 +264,32 @@ if __name__ == "__main__":
                 talk=upcoming_talk,
                 from_email="Speakers' Corner <no-reply@mail.virtualscienceforum.org>",
             )
-            logging.info(f"Sent a reminder to {upcoming_talk['zoom_meeting_id']} registrants.")
-        except StopIteration:
-            pass
+            logging.info(
+                f"Sent a reminder to {upcoming_talk['zoom_meeting_id']} registrants."
+            )
 
     # Weekly emails sent Sunday UTC evening
     if now.hour == 20 and now.weekday() == 6:
         with exceptions:
             weekly_speakers_corner_update(talks)
             logging.info(f"Sent a weekly Speakers' corner announcement")
+
+    # Email the speaker their video link for a talk that took place 10h ago
+    # In principle we could be faster, but this is to guarantee that the
+    # Transcription finished.
+    with exceptions:
+        finished_talk = next(
+            (
+                talk for talk in talks
+                if (now - talk["time"]).total_seconds() // 3600 == 9
+            ),
+            None
+        )
+        if finished_talk is not None:
+            email_video_link(finished_talk)
+            logging.info(
+                "Sent a video link to the speaker from "
+                f"{finished_talk['zoom_meeting_id']}"
+            )
 
     exceptions.reraise()
