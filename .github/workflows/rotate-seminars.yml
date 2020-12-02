@@ -2,7 +2,7 @@ name: Hourly speakers' corner updates
 
 on:
   schedule:
-    - cron: '54 * * * *'
+    - cron: '52 * * * *'
 
 jobs:
   rotate:
