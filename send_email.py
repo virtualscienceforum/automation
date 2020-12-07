@@ -32,7 +32,7 @@ if __name__ == "__main__":
     issue = repo.get_issue(int(os.getenv("ISSUE_NUMBER")))
     data = issue.body.replace('\r', '')
     header, body = data.split('---', maxsplit=1)
-    info = yaml.load(header)
+    header = yaml.load(header)
     if header["to"] in ("vsf_announce", "speakers_corner"):
         to = header["to"] + "@mail.virtualscienceforum.org"
         body += MAILING_LIST_FOOTER(MAILING_LIST_DESCRIPTIONS[header["to"]])
