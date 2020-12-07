@@ -68,8 +68,5 @@ if __name__ == "__main__":
             talk=talk,
         )
 
-    if response.status_code > 299:
-        raise RuntimeError(response)
-
     issue.create_comment("I sent the email 🎉!")
     issue.edit(state="closed")
