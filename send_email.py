@@ -29,7 +29,7 @@ You are receiving this email because you registered for a VSF Zoom meeting with 
 if __name__ == "__main__":
     yaml = YAML()
     repo = common.vsf_repo()
-    issue = repo.get_issue(os.getenv("ISSUE_NUMBER"))
+    issue = repo.get_issue(int(os.getenv("ISSUE_NUMBER")))
     data = issue.body.replace('\r', '')
     header, body = data.split('---', maxsplit=1)
     info = yaml.load(header)
