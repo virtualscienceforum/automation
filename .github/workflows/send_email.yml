@@ -21,7 +21,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Schedule talks
+      - name: Send email
         run: python send_email.py
         env:
           ISSUE_NUMBER: ${{ github.event.client_payload.issue }}

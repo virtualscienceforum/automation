@@ -18,12 +18,12 @@ MAILING_LIST_DESCRIPTIONS = {
 }
 
 MAILING_LIST_FOOTER = """---
-You are receiving this email because you indicated that you are interested in {list_description}.  
+You are receiving this email because you indicated that you are interested in {}.  
 To unsubscribe, use [this link](%mailing_list_unsubscribe_url%)
 """.format
 
 MEETING_MESSAGE_FOOTER = """---
-You are receiving this email because you registered for a VSF Zoom meeting with ID {meeting_id}.
+You are receiving this email because you registered for a VSF Zoom meeting with ID {}.
 """.format
 
 if __name__ == "__main__":
