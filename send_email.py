@@ -50,7 +50,7 @@ if __name__ == "__main__":
     else:
         meeting_id = int(header["to"])
         # We are sending an email to zoom meeting participants
-        talks = common.talks_data(repo=repo)
+        talks, _ = common.talks_data(repo=repo)
         try:
             talk = next(talk for talk in talks if talk["zoom_meeting_id"] == meeting_id)
         except StopIteration:
