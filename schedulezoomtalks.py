@@ -33,9 +33,24 @@ Your meeting information:
 - Time slot: {{ meeting_start }}—{{ meeting_end }} UTC
 - Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
+- Please find the template you may use for the talk announcement at your institution below
 
 Thank you in advance for contributing to the Speakers' Corner!  
 The VSF team
+
+
+Annoucement email template:
+
+Dear colleagues,
+
+I would like to invite you to my upcoming talk titled {{ meeting_talk_title }} taking place on {{ meeting_date }} (yyyy-mm-dd) at {{ meeting_start }} UTC as a part of the Speakers' Corner seminar series of the Virtual Science Forum.
+
+To see the talk abstract and register please go to [VSF Speakers' corner website](https://virtualscienceforum.org/#/speakers-corner) or register directly using [this link]({{ registration_url }}).
+
+I am looking forward to see you there!
+
+Best regards, {{ author }}
+
 """)
 
 REGISTRATION_QUESTIONS = {
@@ -226,6 +241,7 @@ def notify_author(talk, join_url=None) -> str:
         meeting_start=meeting_start,
         meeting_end=meeting_end,
         issue_url=issue_url,
+        registration_url = talk["registration_url"],
     )
 
     data = {
