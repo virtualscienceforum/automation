@@ -207,15 +207,22 @@ def send_to_participants(
     """
     message = template.render(**talk)
     registrants = meeting_registrants(talk['zoom_meeting_id'])
+
+    # Defensively filter out invalid registrants
+    # See https://github.com/virtualscienceforum/automation/issues/27
+    registrants = [r for r in registrants if "email" in r and "join_url" in r]
     data = {
         "from": from_email,
-        "to": list({f"{i['first_name']} {i['last_name']} <{i['email']}>" for i in registrants}),
+        "to": list({
+            f"{r.get('first_name', '')} {r.get('last_name', '')} <{r['email']}>"
+            for r in registrants
+        }),
         "subject": subject.format(**talk),
         "text": markdown_to_plain(message),
         "html": markdown_to_email(message),
         "recipient-variables": json.dumps(
-            {i["email"]: {"join_url": i["join_url"]}
-            for i in registrants}
+            {r["email"]: {"join_url": r["join_url"]}
+            for r in registrants}
         ),
     }
 
