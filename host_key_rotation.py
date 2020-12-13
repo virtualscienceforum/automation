@@ -133,17 +133,17 @@ The Virtual Science Forum team
 WEEKLY_ANNOUNCEMENT_TEMPLATE = jinja2.Template("""Dear %recipient_name%,
 
 
-This week the Speakers' Corner seminar series will have the following talks:
+{% if this_week_talks %}This week the Speakers' Corner seminar series will have the following talks:
 
-{% for talk in talks | sort(attribute="time") if now < talk.time < this_week  %}
+{% for talk in this_week_talks | sort(attribute="time") %}
 - {{ talk.time.strftime("%A %B %-d %-H:%M UTC") }}: *{{ talk.title }}* by {{ talk.speaker_name }} ({{ talk.speaker_affiliation }})
-{%- endfor %}
+{%- endfor %}{% endif %}
 
-The next week's talks are:
+{% if next_week_talks %}The next week's talks {% if not this_week_talks %}in the Speakers' Corner seminar series {% endif %}are:
 
-{% for talk in talks | sort(attribute="time") if this_week < talk.time < next_week %}
+{% for talk in next_week_talks | sort(attribute="time") %}
 - {{ talk.time.strftime("%A %B %-d %-H:%M UTC") }}: *{{ talk.title }}* by {{ talk.speaker_name }} ({{ talk.speaker_affiliation }})
-{%- endfor %}
+{%- endfor %}{% endif %}
 
 To view the abstracts and register please visit the [Speakers' Corner page](https://virtualscienceforum.org/#/speakers-corner).
 
@@ -158,11 +158,23 @@ To unsubscribe visit [this URL](%mailing_list_unsubscribe_url%).
 
 def weekly_speakers_corner_update(talks):
     now = datetime.datetime.now(tz=pytz.UTC)
+    week = datetime.timedelta(days=7)
+    this_week_talks = list(filter(
+        (lambda talk: now < talk["time"] < now + week),
+        talks
+    ))
+    next_week_talks = list(filter(
+        (lambda talk: now + week < talk["time"] < now + 2*week),
+        talks
+    ))
+
+    if not any(this_week_talks, next_week_talks):
+        # Nothing to announce
+        return
+
     message = WEEKLY_ANNOUNCEMENT_TEMPLATE.render(
-        talks=talks,
-        now=now,
-        this_week=now + datetime.timedelta(days=7),
-        next_week=now + datetime.timedelta(days=14),
+        this_week_talks=this_week_talks,
+        next_week_talks=next_week_talks,
     )
     data = {
         "from": "VSF team <no-reply@mail.virtualscienceforum.org>",
