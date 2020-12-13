@@ -23,8 +23,10 @@ and confirm that you received this email.
 We scheduled a Zoom meeting for your Speakers' Corner talk and opened the
 registration for it. Below please find the relevant information that you will
 need. We have also posted step by step instructions for the next steps in your
-[application]({{issue_url}}). Please read those carefully and comment there if
-you have any questions.
+[application]({{issue_url}}).
+
+**Please read these instructions carefully, and explicitly confirm that you
+read them, understood, and received this email.**
 
 Your meeting information:
 
