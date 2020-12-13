@@ -168,7 +168,7 @@ def weekly_speakers_corner_update(talks):
         talks
     ))
 
-    if not any(this_week_talks, next_week_talks):
+    if not any([this_week_talks, next_week_talks]):
         # Nothing to announce
         return
 
