@@ -199,7 +199,7 @@ def patch_registration_notification(meeting_id):
 
 def notify_author(talk, join_url=None) -> str:
     # Get the host key
-    meeting_host_key = host_key(talk["time"])
+    meeting_host_key = host_key(talk["zoom_meeting_id"])
 
     issue_url = (
         "https://github.com/"

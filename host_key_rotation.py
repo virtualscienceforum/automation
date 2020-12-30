@@ -15,98 +15,71 @@ import common
 from common import zoom_request
 
 
-def host_key(timeslot: datetime.datetime) -> int:
+def host_key(zoom_meeting_id: int) -> str:
     """Generate a host key for a specified time."""
     key_salt = os.getenv("HOST_KEY_SALT").encode()
-    timestamp = timeslot.replace(second=0, microsecond=0, minute=0).timestamp()
-    hashed = hashlib.sha512(int(timestamp).to_bytes(5, "big") + key_salt)
+    hashed = hashlib.sha512(zoom_meeting_id.to_bytes(10, "big") + key_salt)
     return f"{int(hashed.hexdigest(), 16) % int(1e6):06}"
 
 
-def update_host_key():
+def update_host_key(key: str):
     """Update the host key of the speakers' corner user for the upcoming hour."""
     logging.info("Updated the host key.")
     zoom_request(
         requests.patch,
         common.ZOOM_API + "users/" + common.SPEAKERS_CORNER_USER_ID,
-        data=json.dumps({
-            "host_key": host_key(datetime.datetime.now(tz=pytz.UTC) + datetime.timedelta(hours=1))
-        })
+        data=json.dumps({"host_key": key})
     )
 
 
 def rotate_meetings():
     """Update the Speakers' corner meeting settings and statuses.
 
-    1. If there is an upcoming meeting in less than an hour, allow joining
+    1. Stop a running meeting if it runs for too long.
+    2. Disable joining before host on recent meetings to prevent restarting.
+    3. If there is an upcoming meeting in less than an hour, allow joining
        before host.
-    2. Stop the running meeting if there is an upcoming one or if it runs for too long.
-    3. Disable joining before host on recent meetings to prevent restarting.
     """
     now = datetime.datetime.now(tz=pytz.UTC)
+    hour = datetime.timedelta(hours=1)
     sc_meetings = common.all_meetings(common.SPEAKERS_CORNER_USER_ID)
     for m in sc_meetings:
         m["start_time"] = parse(m["start_time"])
 
-    live = [m for m in sc_meetings if m.get("live")]
-
-    try:
-        upcoming = min(
-            (m for m in sc_meetings if m["start_time"] > now),
-            key=(lambda meeting: meeting["start_time"])
-        )
-        upcoming_start = upcoming["start_time"]
-    except ValueError:
-        upcoming = None
-        upcoming_start = now + datetime.timedelta(weeks=1)
-
-    recent = [
+    for recent in (
         m for m in sc_meetings
-        if (now > m["start_time"] > now - datetime.timedelta(hours=2))
-        and not m.get("live")
-    ]
-
-    starting_soon = upcoming_start - now < datetime.timedelta(hours=1)
-    if starting_soon:
-        common.zoom_request(
-            requests.patch,
-            f"{common.ZOOM_API}meetings/{upcoming['id']}",
-            data=json.dumps({"settings": {"join_before_host": True}}),
-        )
-        logging.info(f"Allowed joining {upcoming['id']} before host.")
-
-    running = bool(live)
-    if (
-        live
-        and (
-            starting_soon
-            or live[0]["start_time"] < now - datetime.timedelta(minutes=90)
-        )
+        if now - hour > m["start_time"] > now - 2*hour
     ):
-        running = False
-        for live_meeting in live:
-            live_id = live_meeting["id"]
+        recent_id = recent["id"]
+        if recent.get("live"):
             common.zoom_request(
                 requests.put,
-                f"{common.ZOOM_API}meetings/{live_id}/status",
-                data=json.dumps({"action": "end"}),
+                f"{common.ZOOM_API}meetings/{recent_id}/status",
+                json={"action": "end"},
             )
-            common.zoom_request(
-                requests.patch,
-                f"{common.ZOOM_API}meetings/{live_id}",
-                data=json.dumps({"settings": {"join_before_host": False}}),
-            )
-            logging.info(f"Stopped {live_id} and disabled joining.")
+            logging.info(f"Stopped {recent_id}.")
 
-    for meeting in recent:
         common.zoom_request(
             requests.patch,
-            f"{common.ZOOM_API}meetings/{meeting['id']}",
-            data=json.dumps({"settings": {"join_before_host": False}}),
+            f"{common.ZOOM_API}meetings/{recent_id}",
+            json={"settings": {"join_before_host": False}},
         )
-        logging.info(f"Disabled joining {meeting['id']}")
-    
-    return running
+        logging.info(f"Disabled joining {recent_id}.")
+
+
+    for upcoming in (
+        m for m in sc_meetings
+        if now + hour > m["start_time"] > now
+    ):
+        upcoming_id = upcoming['id']
+        common.zoom_request(
+            requests.patch,
+            f"{common.ZOOM_API}meetings/{upcoming_id}",
+            json={"settings": {"join_before_host": True}},
+        )
+        logging.info(f"Allowed joining {upcoming_id}.")
+
+        update_host_key(host_key(upcoming_id))
 
 
 # Emails
@@ -246,9 +219,7 @@ if __name__ == "__main__":
     exceptions = common.CollectExceptions()
 
     with exceptions:
-        meeting_running = rotate_meetings()
-        if not meeting_running:
-            update_host_key()
+        upcoming_talk = rotate_meetings()
 
     talks, _ = common.talks_data()
     logging.info(f"Loaded {len(talks)} talks.")
