@@ -56,7 +56,7 @@ def zoom_headers(duration: int=100) -> dict:
         {"iss": zoom_api_key, "exp": time() + duration},
         zoom_api_secret,
         algorithm='HS256'
-    )
+    ).decode('utf-8')
 
     return {'authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
