@@ -4,6 +4,8 @@ from io import StringIO
 from typing import Tuple
 import datetime
 import json
+import logging
+
 import github
 import requests
 import jinja2
@@ -130,6 +132,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
     )
 
     meeting_id = response["id"]
+    logging.info(f"Scheduled a zoom meeting with id {meeting_id}")
 
     patch_registration_questions(meeting_id)
     speaker_join_url = register_speaker(meeting_id, talk)["join_url"]
@@ -238,6 +241,7 @@ def notify_author(talk, join_url=None) -> str:
         "html": common.markdown_to_email(email_text),
     }
 
+    logging.info(f"Sending an email to {talk['speaker_name']}.")
     return common.api_query(
         requests.post,
         f"{common.MAILGUN_DOMAIN}messages",
@@ -249,7 +253,11 @@ def schedule_talks(repo, talks) -> int:
     for talk in talks:
         # If we are not processing a speakers corner talk, or if the
         # zoom meeting id has already been set, there's nothing left to do
-        if "zoom_meeting_id" in talk or talk["event_type"] != "speakers_corner":
+        if (
+            "zoom_meeting_id" in talk  # Already scheduled
+            or "youtube_id" in talk  # Already published
+            or talk["event_type"] != "speakers_corner"  # Not for this workflow
+        ):
             continue
 
         meeting_id, registration_url, join_url = schedule_zoom_talk(talk)
