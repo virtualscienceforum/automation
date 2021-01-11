@@ -15,6 +15,7 @@ yaml = YAML()
 
 ZOOM_API = "https://api.zoom.us/v2/"
 SPEAKERS_CORNER_USER_ID = "D0n5UNEHQiajWtgdWLlNSA"
+VSF_USER_ID = "iJFotmmLRgOHJrTe9MKHRA"
 TALKS_FILE = "talks.yml"
 
 MAILGUN_BASE_URL = "https://api.eu.mailgun.net/v3/"

@@ -79,15 +79,20 @@ REGISTRATION_QUESTIONS = {
 
 
 
-def schedule_zoom_talk(talk) -> Tuple[str, str]:
+def schedule_zoom_talk(
+    talk,
+    user_id,
+    header,
+    auto_recording="cloud",
+) -> Tuple[str, str]:
     # Form the talk registration body
     request_body = {
-        "topic": "Speakers\' corner talk by %s"%(talk["speaker_name"]),
+        "topic": f"{header} by {talk['speaker_name']}",
         "type": 2, # Scheduled meeting
         "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
         "timezone": "UTC",
         "duration": 60,
-        "schedule_for": common.SPEAKERS_CORNER_USER_ID,
+        "schedule_for": user_id,
 
         # Generate a password for the meeting. This is required since
         # otherwise the meeting room will be forced. Zoom limits the
@@ -111,7 +116,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
             "close_registration" : True, # Close registration after event date
             "waiting_room" : False,    # No waiting room
             "audio": "both",
-            "auto_recording": "cloud",
+            "auto_recording": auto_recording,
             "enforce_login": False,
             "alternative_hosts": "",
 
@@ -127,7 +132,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
     # Create the meeting
     response = common.zoom_request(
         requests.post,
-        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings",
+        f"{common.ZOOM_API}users/{user_id}/meetings",
         data=json.dumps(request_body)
     )
 
@@ -146,7 +151,7 @@ def register_speaker(meeting_id, talk):
     # registration requirements
     first_name, last_name = talk["speaker_name"].split(maxsplit=1) 
     request_payload = {
-        "email": talk["email"],
+        "email": talk.get("email", "speaker@virtualscienceforum.org"),
         "first_name": first_name,
         "last_name": last_name,
         "org": talk["speaker_affiliation"],
@@ -256,18 +261,31 @@ def schedule_talks(repo, talks) -> int:
         if (
             "zoom_meeting_id" in talk  # Already scheduled
             or "youtube_id" in talk  # Already published
-            or talk["event_type"] != "speakers_corner"  # Not for this workflow
+            or talk["event_type"] not in ["speakers_corner", "lrc"]  # Not for this workflow
         ):
             continue
 
-        meeting_id, registration_url, join_url = schedule_zoom_talk(talk)
+        is_speakers_corner = talk["event_type"] == "speakers_corner"
+        meeting_id, registration_url, join_url = schedule_zoom_talk(
+            talk,
+            user_id=(
+                common.SPEAKERS_CORNER_USER_ID if is_speakers_corner
+                else common.VSF_USER_ID
+            ),
+            header=(
+                "Speakers\' Corner talk" if is_speakers_corner
+                else "Long Range Colloquium"
+            ),
+            auto_recording=("cloud" if is_speakers_corner else "none"),
+        )
         if meeting_id:
             talk["zoom_meeting_id"] = meeting_id
             talk["registration_url"] = registration_url
             # Add this talk to researchseminars.org
             # publish_to_researchseminars(talk)
             # Email the author
-            notify_author(talk, join_url)
+            if is_speakers_corner:
+                notify_author(talk, join_url)
 
             num_updated += 1
 
@@ -275,6 +293,8 @@ def schedule_talks(repo, talks) -> int:
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
     # Get a handle on the repository
     target_branch = "master"
     repo = common.vsf_repo()
