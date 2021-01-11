@@ -15,7 +15,7 @@ yaml = YAML()
 
 ZOOM_API = "https://api.zoom.us/v2/"
 SPEAKERS_CORNER_USER_ID = "D0n5UNEHQiajWtgdWLlNSA"
-TALKS_FILE = "speakers_corner_talks.yml"
+TALKS_FILE = "talks.yml"
 
 MAILGUN_BASE_URL = "https://api.eu.mailgun.net/v3/"
 MAILGUN_DOMAIN = "mail.virtualscienceforum.org/"
