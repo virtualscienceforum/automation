@@ -130,6 +130,8 @@ To unsubscribe visit [this URL](%mailing_list_unsubscribe_url%).
 
 
 def weekly_speakers_corner_update(talks):
+    # Filter out only the speakers' corner talks
+    talks = [t for t in talks if t["event_type"] == "speakers_corner"]
     now = datetime.datetime.now(tz=pytz.UTC)
     week = datetime.timedelta(days=7)
     this_week_talks = list(filter(
@@ -157,11 +159,13 @@ def weekly_speakers_corner_update(talks):
         "html": common.markdown_to_email(message),
     }
 
-    return common.api_query(
+    response = common.api_query(
         requests.post,
         common.MAILGUN_DOMAIN + "messages",
         data=data
     )
+    logging.info("Sent the weekly update.")
+    return response
 
 
 RECORDING_AVAILABLE_TEMPLATE = jinja2.Template("""Dear {{speaker_name}},
@@ -199,7 +203,7 @@ def email_video_link(talk):
         **talk,
     )
 
-    return common.api_query(
+    response = common.api_query(
         requests.post,
         common.MAILGUN_DOMAIN + "messages",
         data={
@@ -210,6 +214,8 @@ def email_video_link(talk):
             "html": common.markdown_to_email(message),
         }
     )
+    logging.info(f"Notified the speaker of {talk['zoom_meeting_id']} about recording.")
+    return response
 
 
 if __name__ == "__main__":
