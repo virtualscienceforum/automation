@@ -48,18 +48,27 @@ class CollectExceptions:
         ])
 
 
-@lru_cache()
-def zoom_headers(duration: int=100) -> dict:
+def make_zoom_headers(duration: float=100) -> callable:
     zoom_api_key = os.getenv("ZOOM_API_KEY")
     zoom_api_secret = os.getenv("ZOOM_API_SECRET")
-    token = jwt.encode(
-        # Create a payload of the token containing API Key & expiration time
-        {"iss": zoom_api_key, "exp": time() + duration},
-        zoom_api_secret,
-        algorithm='HS256'
-    ).decode('utf-8')
+    expiration = time() + duration
 
-    return {'authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    def zoom_headers() -> dict:
+        nonlocal expiration
+        if time() > expiration:
+            expiration = time() + duration
+        token = jwt.encode(
+            # Create a payload of the token containing API Key & expiration time
+            {"iss": zoom_api_key, "exp": expiration},
+            zoom_api_secret,
+            algorithm='HS256'
+        ).decode('utf-8')
+
+        return {'authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    return zoom_headers
+
+zoom_headers = make_zoom_headers()
 
 
 def vsf_repo():
@@ -81,8 +90,8 @@ def talks_data(ref="master", repo=None):
         # Note that we rely on the current behavior that returns UTC time
         talk["time"] = datetime.datetime.fromtimestamp(
             talk["time"]
-            .replace(tzinfo=datetime.timezone.utc)
-            .timestamp(),
+                .replace(tzinfo=datetime.timezone.utc)
+                .timestamp(),
             tz=datetime.timezone.utc
         )
     return talks, talks_data.sha

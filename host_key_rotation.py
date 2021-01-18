@@ -225,7 +225,7 @@ if __name__ == "__main__":
     exceptions = common.CollectExceptions()
 
     with exceptions:
-        upcoming_talk = rotate_meetings()
+        rotate_meetings()
 
     talks, _ = common.talks_data()
     logging.info(f"Loaded {len(talks)} talks.")
