@@ -139,18 +139,22 @@ def all_meetings(user_id) -> list:
     return meetings
 
 
-def decode(response):
-    if response.status_code > 299:  # Not OK
-        raise RuntimeError(response.content.decode())
-    return json.loads(response.content.decode())
-
-
 def api_query(method, endpoint, **params):
-    return decode(method(
+    """A simple wrapper around mailgun API query"""
+    response = method(
         MAILGUN_BASE_URL + endpoint,
         auth=("api", os.getenv("MAILGUN_API_KEY")),
         **params
-    ))
+    )
+    try:
+        result = response.json()
+    except ValueError:
+        result = response.text
+
+    if response.status_code > 299:  # Not OK
+        raise RuntimeError(result)
+
+    return result
 
 
 def markdown_to_email(text: str) -> str:

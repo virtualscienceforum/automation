@@ -35,22 +35,21 @@ if __name__ == "__main__":
     data = issue.body.replace('\r', '')
     header, body = data.split('---', maxsplit=1)
     header = yaml.load(header)
-    if header["to"] in ("vsf-announce", "speakers_corner"):
-        to = header["to"] + "@mail.virtualscienceforum.org"
-        body += MAILING_LIST_FOOTER(MAILING_LIST_DESCRIPTIONS[header["to"]])
+    if (to := header["to"]) in MAILING_LIST_DESCRIPTIONS:
+        body += MAILING_LIST_FOOTER(MAILING_LIST_DESCRIPTIONS[to])
         response = common.api_query(
             requests.post,
             common.MAILGUN_BASE_URL + "messages",
             data={
                 "from": header["from"],
-                "to": to,
+                "to": to + "@mail.virtualscienceforum.org",
                 "subject": header["subject"],
                 "text": common.markdown_to_plain(body),
                 "html": common.markdown_to_email(body),
             }
         )
     else:
-        meeting_id = int(header["to"])
+        meeting_id = int(to)
         # We are sending an email to zoom meeting participants
         talks, _ = common.talks_data(repo=repo)
         try:
