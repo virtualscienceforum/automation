@@ -13,7 +13,7 @@ import pytz
 import common
 
 MAILING_LIST_DESCRIPTIONS = {
-    "vsf_announce": "updates from VSF",
+    "vsf-announce": "updates from VSF",
     "speakers_corner": "Speakers' Corner news"
 }
 
