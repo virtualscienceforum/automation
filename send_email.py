@@ -39,7 +39,7 @@ if __name__ == "__main__":
         body += MAILING_LIST_FOOTER(MAILING_LIST_DESCRIPTIONS[to])
         response = common.api_query(
             requests.post,
-            common.MAILGUN_BASE_URL + "messages",
+            common.MAILGUN_DOMAIN + "messages",
             data={
                 "from": header["from"],
                 "to": to + "@mail.virtualscienceforum.org",
