@@ -35,7 +35,7 @@ if __name__ == "__main__":
     data = issue.body.replace('\r', '')
     header, body = data.split('---', maxsplit=1)
     header = yaml.load(header)
-    if header["to"] in ("vsf_announce", "speakers_corner"):
+    if header["to"] in ("vsf-announce", "speakers_corner"):
         to = header["to"] + "@mail.virtualscienceforum.org"
         body += MAILING_LIST_FOOTER(MAILING_LIST_DESCRIPTIONS[header["to"]])
         response = common.api_query(
