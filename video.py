@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
     talk["youtube_id"] = upload(f"{meeting_id}_trimmed.mp4", title, abstract)
     logger.info(f"Uploaded {talk['youtube_id']}")
-    del talk['zoom_meeting_id'], talk["speaker_email"], talk["registration_url"]
+    del talk['zoom_meeting_id'], talk["email"], talk["registration_url"]
 
     # Get the data again because someone might have pushed in the meantime.
     talks, sha = common.talks_data()
