@@ -104,6 +104,17 @@ def load_credentials():
 credentials = load_credentials()
 
 
+def ping_youtube():
+    """A cheap check to see if we are authorized."""
+    # TODO: once youtube implements checking quota, check remaining quota
+    googleapiclient.discovery.build(
+        "youtube", "v3", credentials=credentials()
+    ).channels().list(
+        part="snippet,contentDetails,statistics",
+        mine=True
+    ).execute()
+
+
 def upload(file, title, description):
     youtube = googleapiclient.discovery.build(
         "youtube", "v3", credentials=credentials()
@@ -171,6 +182,7 @@ def intervals_from_issue(issue):
 
 
 if __name__ == "__main__":
+    ping_youtube()
     yaml = common.yaml
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
