@@ -45,7 +45,7 @@ def download_video(zoom_meeting_id):
         )],
         stream=True,
     )
-    with open(Path(f'{"zoom_meeting_id"}.mp4'), "wb") as f:
+    with open(Path(f'{zoom_meeting_id}.mp4'), "wb") as f:
         for chunk in mp4_response.iter_content(chunk_size=1024*1024):
             f.write(chunk)
 
