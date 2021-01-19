@@ -49,11 +49,12 @@ class CollectExceptions:
 
 
 def make_zoom_headers(duration: float=100) -> callable:
-    zoom_api_key = os.getenv("ZOOM_API_KEY")
-    zoom_api_secret = os.getenv("ZOOM_API_SECRET")
     expiration = time() + duration
 
     def zoom_headers() -> dict:
+        zoom_api_key = os.getenv("ZOOM_API_KEY")
+        zoom_api_secret = os.getenv("ZOOM_API_SECRET")
+
         nonlocal expiration
         if time() > expiration:
             expiration = time() + duration
