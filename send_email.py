@@ -53,7 +53,7 @@ if __name__ == "__main__":
         # We are sending an email to zoom meeting participants
         talks, _ = common.talks_data(repo=repo)
         try:
-            talk = next(talk for talk in talks if talk["zoom_meeting_id"] == meeting_id)
+            talk = next(talk for talk in talks if talk.get("zoom_meeting_id") == meeting_id)
         except StopIteration:
             # Not a speakers corner talk, no extra data associated.
             talk = {"zoom_meeting_id": meeting_id}
