@@ -63,7 +63,7 @@ def make_zoom_headers(duration: float=100) -> callable:
             {"iss": zoom_api_key, "exp": expiration},
             zoom_api_secret,
             algorithm='HS256'
-        ).decode('utf-8')
+        )
 
         return {'authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
