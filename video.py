@@ -230,5 +230,5 @@ if __name__ == "__main__":
         sha=sha,
         branch="master",
     )
-    issue.create_comment("I uploaded the video 🎉!")
+    issue.create_comment(f"I uploaded the video to https://youtu.be/{talk['yotube_id']} 🎉!")
     issue.edit(state="closed")
