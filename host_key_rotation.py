@@ -131,7 +131,6 @@ To unsubscribe visit [this URL](%mailing_list_unsubscribe_url%).
 
 def weekly_speakers_corner_update(talks):
     # Filter out only the speakers' corner talks
-    talks = [t for t in talks if t["event_type"] == "speakers_corner"]
     now = datetime.datetime.now(tz=pytz.UTC)
     week = datetime.timedelta(days=7)
     this_week_talks = list(filter(
@@ -228,6 +227,7 @@ if __name__ == "__main__":
         rotate_meetings()
 
     talks, _ = common.talks_data()
+    talks = [talk for talk in talks if talk["event_type"] == "speakers_corner"]
     logging.info(f"Loaded {len(talks)} talks.")
     for talk in talks:
         talk["time"] = talk["time"].replace(tzinfo=pytz.UTC)
