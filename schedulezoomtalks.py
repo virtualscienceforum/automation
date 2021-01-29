@@ -38,6 +38,7 @@ Your meeting information:
 - Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
 
+
 Thank you in advance for contributing to the Speakers' Corner!
 The VSF team
 """)
@@ -282,14 +283,13 @@ def schedule_talks(repo, talks) -> int:
             talk["zoom_meeting_id"] = meeting_id
             talk["registration_url"] = registration_url
 
-            # Add this talk to researchseminars.org
-            publish_to_researchseminars(talk)
-
             # Email the author
             if is_speakers_corner:
                 notify_author(talk, join_url)
-
             num_updated += 1
+
+            # Add this talk to researchseminars.org
+            publish_to_researchseminars(talk)
 
     return num_updated
 
