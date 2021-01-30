@@ -87,9 +87,9 @@ button:hover {
     <input type="text" placeholder="Enter your last name" name="lastname" id="name" required>
 
     <label for="address"><b>Email</b></label>
-    <input type="text" placeholder="Enter your Email" name="address" id="address" required>
+    <input type="email" placeholder="Enter your Email" name="address" id="address" required>
     <label for="addressconfirm"><b>Confirm Email</b></label>
-    <input type="text" placeholder="Confirm your Email" name="addressconfirm" id="address" required>
+    <input type="email" placeholder="Confirm your Email" name="addressconfirm" id="address" required>
 
     <div id="checkboxes">
         <ul id="checkboxes" style='list-style:none'>
@@ -146,11 +146,6 @@ function validateRegistrationFormData(bodydata)
   if (!bodydata) return false
   if (!bodydata.firstname) return false
   if (!bodydata.lastname) return false
-
-  // Taken from http://emailregex.com/
-  const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  if (!bodydata.address || !emailRegex.test(bodydata.address)) return false
-  if (!bodydata.addressconfirm || !emailRegex.test(bodydata.addressconfirm)) return false
   if (!(bodydata.address === bodydata.addressconfirm)) return false
 
   return true
@@ -329,6 +324,7 @@ async function handleZoomRegistrationRequest(request) {
   }
 }
 
+
 async function sendRegistrationConfirmationEmail(address, name, talk) {
 
   // Update the template
@@ -359,6 +355,7 @@ async function sendRegistrationConfirmationEmail(address, name, talk) {
   }
   return new Response("results", {status:200, headers:corsHeaders})
 }
+
 
 function getListName(list)
 {
@@ -422,6 +419,7 @@ function respondWithRawHTML(html) {
 addEventListener('fetch', event => {
     event.respondWith(handleRequest(event.request))
 })
+
 
 async function handleRequest(request) {
     // Replace with the appropriate paths and handlers
