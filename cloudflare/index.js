@@ -1,3 +1,5 @@
+const Router = require('./router')
+
 const MAILGUN_API_URL = "https://api.eu.mailgun.net/v3"
 const USER = 'api';
 const DOMAIN = 'mail.virtualscienceforum.org'
@@ -315,7 +317,7 @@ async function handleZoomRegistrationRequest(request) {
     var registerURL = 'https://api.zoom.us/v2/meetings/' + meetingId + '/registrants'
     const response = await fetch(registerURL, requestbody)
 
-    // If we get here, we managed to sign up for the lists
+    // If we get here, we managed to register
     const sendmailresponse = await sendRegistrationConfirmationEmail(bodydata.address, bodydata.name, "LRC")
     if( sendmailresponse.status != 200 ) {
       return new Response("You succesfully registered, but sending the confirmation email failed.", {status:sendmailresponse.status, headers:corsHeaders})
@@ -418,26 +420,22 @@ function respondWithRawHTML(html) {
   return new Response(html, init)
 }
 
-addEventListener("fetch", event => {
-  // Extract the request from the event
-  const { request } = event
-  // Extract the url from the request
-  const { url } = request
 
-  if (request.method === "POST" )
-  {
-    if( url.includes("zoom")) {
-      return event.respondWith(handleZoomRegistrationRequest(request))
-    }
-    if( url.includes("mailinglist")) {
-      return event.respondWith(handleMailingListSignupRequest(request))
-    }
-  }
-  else {
-    if(url.includes("zoom"))
-    {
-      return event.respondWith(respondWithRawHTML(registrationForm))
-    }
-    return event.respondWith(new Response(`Expecting a POST request`))
-  }
+addEventListener('fetch', event => {
+    event.respondWith(handleRequest(event.request))
 })
+
+async function handleRequest(request) {
+    // Replace with the appropriate paths and handlers
+    const r = new Router()
+
+    //r.get('.*/bar', () => new Response('responding for /bar'))
+    r.get('/register', request => respondWithRawHTML(registrationForm))
+    r.post('/mailinglist', request => handleMailingListSignupRequest(request) )
+    r.post('/register', request => handleZoomRegistrationRequest(request))
+
+    r.get('/', () => new Response('Hello VSF worker!')) // return a default message for the root route
+
+    const resp = await r.route(request)
+    return resp
+}
