@@ -1,4 +1,5 @@
 import os
+import re
 from requests import get, post
 from datetime import timedelta
 
@@ -123,8 +124,8 @@ def publish_to_researchseminars(talk):
         #"video_link":"http://ToBeUpdated",
     }
 
-    # If a paper link is available, add it. Not all talks have preprints
-    if( talk.get('preprint', '') != '' ):
+    # If an arxiv identifier is available, add it. Not all talks have preprints
+    if re.fullmatch(r"\d{4}\.\d{5}", talk.get("preprint", "")):
         talk_payload["paper_link"] = "https://arxiv.org/abs/"+talk.get('preprint')
 
     # Add extra authors if available
