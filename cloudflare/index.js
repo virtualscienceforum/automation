@@ -13,6 +13,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 }
 
+const websiteWithTalks = `
+<!DOCTYPE html>
+<head>
+</head>
+<html>
+<body>
+<form id="registrationForm" method="post" action="/registrationForm" style="border:1px solid #ccc">
+  <h2> New Upcoming LRC Colloquim by Evert </h2>
+  <input type="hidden" name="speakerName" id="speakerName" value="Evert" required>
+  <input type="hidden" name="meetingID" id="meetingID" value="abcdefg" required>
+  <div class="clearfix">
+    <button type="submit" class="registerbtn">Register</button>
+  </div>
+</form>
+</body>
+</html>
+`
+
 const registrationForm = `
 <!DOCTYPE html>
 <head>
@@ -76,10 +94,10 @@ button:hover {
 }
 </style>
 <body>
-<form id="registrationForm" method="post" action="/zoom" style="border:1px solid #ccc">
+<form id="registrationForm" method="post" action="/register" style="border:1px solid #ccc">
   <div class="container">
     <h1>Sign Up</h1>
-    <p>Please fill in this form to register for $TALK$.</p>
+    <p>Please fill in this form to register for the talk by SPEAKERNAME.</p>
     <hr>
     <label for="firstname"><b>First Name</b></label>
     <input type="text" placeholder="Enter your first name" name="firstname" id="name" required>
@@ -97,6 +115,8 @@ button:hover {
           <li> <input type="checkbox" name="contact-checkbox" value="confirm-contact" checked> Please check this box if we may contact you about future VSF events </li>
         </ul>
     </div>
+
+    <input type="hidden" name="meetingID" id="meetingID" value="MEETINGID" required>
 
     <div id="recaptcha" name="recaptcha" class="g-recaptcha" data-sitekey="6Lf37MoZAAAAAF19QdljioXkLIw23w94QWpy9c5E"></div>
     <div class="clearfix">
@@ -126,9 +146,9 @@ const welcomeEmail = `
   <html>
   <body>
   <h1>Welcome to the mailing list</h1>
-  <p>Dear participant,</p>
-  <p>Thank you for signing up</p>
-  <p>Yours,</p>
+  <p>Dear NAME,</p>
+  <p>THANKYOUMSG</p>
+  <p>Kind regards,</p>
   <p>VSF</p>
   </body>
   </html>
@@ -416,6 +436,25 @@ function respondWithRawHTML(html) {
 }
 
 
+async function renderRegistrationForm(request) {
+
+  const formData = await request.formData()
+  const bodydata = {}
+  for (const entry of formData.entries()) {
+    bodydata[entry[0]] = entry[1]
+  }
+
+  var htmlForm = registrationForm.replace("SPEAKERNAME", bodydata['speakerName'])
+  var htmlForm = htmlForm.replace("MEETINGID", bodydata['meetingID'])
+
+  const init = {
+    headers: {
+      "content-type": "text/html;charset=UTF-8",
+    },
+  }
+  return new Response(htmlForm, init)
+}
+
 addEventListener('fetch', event => {
     event.respondWith(handleRequest(event.request))
 })
@@ -426,11 +465,12 @@ async function handleRequest(request) {
     const r = new Router()
 
     //r.get('.*/bar', () => new Response('responding for /bar'))
-    r.get('/register', request => respondWithRawHTML(registrationForm))
-    r.post('/mailinglist', request => handleMailingListSignupRequest(request) )
+    r.get('/LRC', request => respondWithRawHTML(websiteWithTalks))
+    r.post('/registrationForm', request => renderRegistrationForm(request))
     r.post('/register', request => handleZoomRegistrationRequest(request))
+    r.post('/mailinglist', request => handleMailingListSignupRequest(request) )
 
-    r.get('/', () => new Response('Hello VSF worker!')) // return a default message for the root route
+    r.get('/', () => new Response('Hello from our VSF worker! Please visit /LRC')) // return a default message for the root route
 
     const resp = await r.route(request)
     return resp
