@@ -289,7 +289,10 @@ def schedule_talks(repo, talks) -> int:
             num_updated += 1
 
             # Add this talk to researchseminars.org
-            publish_to_researchseminars(talk)
+            try:
+                publish_to_researchseminars(talk)
+            except Exception:
+                logging.error("Failed to add the talk to researchseminars.org")
 
     return num_updated
 
