@@ -38,7 +38,8 @@ Your meeting information:
 - Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
 
-Thank you in advance for contributing to the Speakers' Corner!  
+
+Thank you in advance for contributing to the Speakers' Corner!
 The VSF team
 """)
 
@@ -149,7 +150,7 @@ def schedule_zoom_talk(
 def register_speaker(meeting_id, talk):
     # The splitting is approximate, and is done merely to satisfy the Zoom
     # registration requirements
-    first_name, last_name = talk["speaker_name"].split(maxsplit=1) 
+    first_name, last_name = talk["speaker_name"].split(maxsplit=1)
     request_payload = {
         "email": talk.get("email", "speaker@virtualscienceforum.org"),
         "first_name": first_name,
@@ -281,13 +282,17 @@ def schedule_talks(repo, talks) -> int:
         if meeting_id:
             talk["zoom_meeting_id"] = meeting_id
             talk["registration_url"] = registration_url
-            # Add this talk to researchseminars.org
-            # publish_to_researchseminars(talk)
+
             # Email the author
             if is_speakers_corner:
                 notify_author(talk, join_url)
-
             num_updated += 1
+
+            # Add this talk to researchseminars.org
+            try:
+                publish_to_researchseminars(talk)
+            except Exception:
+                logging.error("Failed to add the talk to researchseminars.org")
 
     return num_updated
 
