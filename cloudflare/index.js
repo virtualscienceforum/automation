@@ -172,7 +172,7 @@ async function handleMailingListSignupRequest(request) {
 
   try
   {
-    const formData = await request.formData()
+      const formData = await request.formData()
       const bodydata = {}
       const listsToSubscribeTo = [] // Empty array to hold all the email lists to sign up to
       for (const entry of formData.entries()) {
@@ -248,7 +248,6 @@ async function handleMailingListSignupRequest(request) {
         return new Response("You were signed up, but sending a confirmation email failed.", {status:sendmailresponse.status, headers:corsHeaders})
       }
       return new Response("Succesfully subscribed. You will receive a confirmation email.", {status:200, headers:corsHeaders})
-    }
   }
   catch (err)
   {
@@ -258,7 +257,6 @@ async function handleMailingListSignupRequest(request) {
 }
 
 async function handleZoomRegistrationRequest(request) {
-
   try
   {
     const formData = await request.formData()
