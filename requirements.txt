@@ -1,7 +1,7 @@
 requests
 pytz
 python-dateutil
-PyJWT
+PyJWT>=2.0.0
 PyGithub
 PyYAML
 ruamel.yaml

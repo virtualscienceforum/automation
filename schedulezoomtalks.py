@@ -4,9 +4,10 @@ from io import StringIO
 from typing import Tuple
 import datetime
 import json
+import logging
+
 import github
 import requests
-from ruamel.yaml import YAML
 import jinja2
 import pytz
 
@@ -18,11 +19,16 @@ from host_key_rotation import host_key
 EMAIL_TEMPLATE = jinja2.Template(
 """Dear {{ author }},
 
+Please respond as soon as possible in your [application issue]({{issue_url}})
+and confirm that you received this email.
+
 We scheduled a Zoom meeting for your Speakers' Corner talk and opened the
 registration for it. Below please find the relevant information that you will
 need. We have also posted step by step instructions for the next steps in your
-[application]({{issue_url}}). Please read those carefully and comment there if
-you have any questions.
+[application]({{issue_url}}).
+
+**Please read these instructions carefully, and explicitly confirm that you
+read them, understood, and received this email.**
 
 Your meeting information:
 
@@ -32,7 +38,8 @@ Your meeting information:
 - Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
 
-Thank you in advance for contributing to the Speakers' Corner!  
+
+Thank you in advance for contributing to the Speakers' Corner!
 The VSF team
 """)
 
@@ -73,15 +80,20 @@ REGISTRATION_QUESTIONS = {
 
 
 
-def schedule_zoom_talk(talk) -> Tuple[str, str]:
+def schedule_zoom_talk(
+    talk,
+    user_id,
+    header,
+    auto_recording="cloud",
+) -> Tuple[str, str]:
     # Form the talk registration body
     request_body = {
-        "topic": "Speakers\' corner talk by %s"%(talk["speaker_name"]),
+        "topic": f"{header} by {talk['speaker_name']}",
         "type": 2, # Scheduled meeting
         "start_time": talk["time"].strftime('%Y-%m-%dT%H:%M:%S'),
         "timezone": "UTC",
         "duration": 60,
-        "schedule_for": common.SPEAKERS_CORNER_USER_ID,
+        "schedule_for": user_id,
 
         # Generate a password for the meeting. This is required since
         # otherwise the meeting room will be forced. Zoom limits the
@@ -105,7 +117,7 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
             "close_registration" : True, # Close registration after event date
             "waiting_room" : False,    # No waiting room
             "audio": "both",
-            "auto_recording": "none",
+            "auto_recording": auto_recording,
             "enforce_login": False,
             "alternative_hosts": "",
 
@@ -121,11 +133,12 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
     # Create the meeting
     response = common.zoom_request(
         requests.post,
-        f"{common.ZOOM_API}users/{common.SPEAKERS_CORNER_USER_ID}/meetings",
+        f"{common.ZOOM_API}users/{user_id}/meetings",
         data=json.dumps(request_body)
     )
 
     meeting_id = response["id"]
+    logging.info(f"Scheduled a zoom meeting with id {meeting_id}")
 
     patch_registration_questions(meeting_id)
     speaker_join_url = register_speaker(meeting_id, talk)["join_url"]
@@ -137,9 +150,9 @@ def schedule_zoom_talk(talk) -> Tuple[str, str]:
 def register_speaker(meeting_id, talk):
     # The splitting is approximate, and is done merely to satisfy the Zoom
     # registration requirements
-    first_name, last_name = talk["speaker_name"].split(maxsplit=1) 
+    first_name, last_name = talk["speaker_name"].split(maxsplit=1)
     request_payload = {
-        "email": talk["email"],
+        "email": talk.get("email", "speaker@virtualscienceforum.org"),
         "first_name": first_name,
         "last_name": last_name,
         "org": talk["speaker_affiliation"],
@@ -193,9 +206,22 @@ def patch_registration_notification(meeting_id):
     return response
 
 
-def notify_author(talk, join_url, issue_url) -> str:
+def notify_author(talk, join_url=None) -> str:
     # Get the host key
-    meeting_host_key = host_key(talk["time"])
+    meeting_host_key = host_key(talk["zoom_meeting_id"])
+
+    issue_url = (
+        "https://github.com/"
+        "virtualscienceforum/virtualscienceforum/issues/"
+        f"{talk['workflow_issue']}"
+    )
+
+    if join_url is None:
+        join_url = next(
+            p["join_url"]
+            for p in common.meeting_registrants(talk["zoom_meeting_id"])
+            if p["email"] == talk["email"]
+        )
 
     # Format the email body
     meeting_start = talk["time"].strftime('%H:%M')
@@ -221,6 +247,7 @@ def notify_author(talk, join_url, issue_url) -> str:
         "html": common.markdown_to_email(email_text),
     }
 
+    logging.info(f"Sending an email to {talk['speaker_name']}.")
     return common.api_query(
         requests.post,
         f"{common.MAILGUN_DOMAIN}messages",
@@ -232,37 +259,52 @@ def schedule_talks(repo, talks) -> int:
     for talk in talks:
         # If we are not processing a speakers corner talk, or if the
         # zoom meeting id has already been set, there's nothing left to do
-        if "zoom_meeting_id" in talk or talk["event_type"] != "speakers_corner":
+        if (
+            "zoom_meeting_id" in talk  # Already scheduled
+            or "youtube_id" in talk  # Already published
+            or talk["event_type"] not in ["speakers_corner", "lrc"]  # Not for this workflow
+        ):
             continue
 
-        meeting_id, registration_url, join_url = schedule_zoom_talk(talk)
+        is_speakers_corner = talk["event_type"] == "speakers_corner"
+        meeting_id, registration_url, join_url = schedule_zoom_talk(
+            talk,
+            user_id=(
+                common.SPEAKERS_CORNER_USER_ID if is_speakers_corner
+                else common.VSF_USER_ID
+            ),
+            header=(
+                "Speakers\' Corner talk" if is_speakers_corner
+                else "Long Range Colloquium"
+            ),
+            auto_recording=("cloud" if is_speakers_corner else "none"),
+        )
         if meeting_id:
             talk["zoom_meeting_id"] = meeting_id
             talk["registration_url"] = registration_url
-            # Add this talk to researchseminars.org
-            # publish_to_researchseminars(talk)
-            issue = repo.get_issue(number=talk["workflow_issue"])
-            # Email the author
-            notify_author(talk, join_url, issue.html_url)
 
+            # Email the author
+            if is_speakers_corner:
+                notify_author(talk, join_url)
             num_updated += 1
+
+            # Add this talk to researchseminars.org
+            try:
+                publish_to_researchseminars(talk)
+            except Exception:
+                logging.error("Failed to add the talk to researchseminars.org")
 
     return num_updated
 
-if __name__ == "__main__":
-    # Get a handle on the repository
-    gh = github.Github(os.getenv("VSF_BOT_TOKEN"))
-    target_branch = "master"
-    repo = gh.get_repo("virtualscienceforum/virtualscienceforum")
 
-    # Read the talks file
-    yaml = YAML()
-    try:
-        talks_data = repo.get_contents(common.TALKS_FILE, ref=target_branch)
-        talks = yaml.load(StringIO(talks_data.decoded_content.decode()))
-    except github.UnknownObjectException:
-        talks_data = None
-        talks = []
+if __name__ == "__main__":
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    # Get a handle on the repository
+    target_branch = "master"
+    repo = common.vsf_repo()
+    talks, sha = common.talks_data(repo=repo)
+    yaml = common.yaml
 
     # If we added Zoom links, we should update the file in the repo
     if (num_updated := schedule_talks(repo, talks)):
@@ -274,6 +316,6 @@ if __name__ == "__main__":
             common.TALKS_FILE,
             commit_message,
             serialized.getvalue(),
-            sha=talks_data.sha,
+            sha=sha,
             branch=target_branch,
         )
