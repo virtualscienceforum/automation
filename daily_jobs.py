@@ -134,7 +134,7 @@ def add_zoom_registrants_to_mailgun():
 
     # Filter by past meetings
     time_now = datetime.datetime.now(tz=pytz.UTC)
-    time_yesterday = time_now - datetime.timedelta(days=60)
+    time_yesterday = time_now - datetime.timedelta(days=1)
     past_meetings = [
         meeting for meeting in meetings
         if time_yesterday < pandas.to_datetime(meeting['start_time']) < time_now
