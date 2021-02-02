@@ -134,26 +134,27 @@ def add_zoom_registrants_to_mailgun():
 
     # Filter by past meetings
     time_now = datetime.datetime.now(tz=pytz.UTC)
-    time_yesterday = time_now - datetime.timedelta(days=1)
-    past_lrc = [
+    time_yesterday = time_now - datetime.timedelta(days=60)
+    past_meetings = [
         meeting for meeting in meetings
         if time_yesterday < pandas.to_datetime(meeting['start_time']) < time_now
     ]
 
-    for lrc in past_lrc:
+    for meeting in past_meetings:
         # Get registrants
-        lrc_registrants = common.meeting_registrants(lrc['id'])
+        registrants = common.meeting_registrants(meeting['id'])
 
-        # Filter those who want to sign up for emails
-        member_data = dict(members=json.dumps([
-            dict(address=i['email'], name="{0} {1}".format(i.get('first_name'), i.get('last_name','')))
-            for i in lrc_registrants if (i.get('May we contact you about future Virtual Science Forum events?','') == "Yes")
-        ]))
+        if( len(registrants) != 0 ):
+            # Filter those who want to sign up for emails
+            member_data = dict(members=json.dumps([
+                dict(address=i['email'], name="{0} {1}".format(i.get('first_name'), i.get('last_name','')))
+                for i in registrants if (i.get('May we contact you about future Virtual Science Forum events?','') == "Yes")
+            ]))
 
-        api_query(
-            post, f'lists/{announce_list}/members.json',
-            data=member_data
-        )
+            api_query(
+                post, f'lists/{announce_list}/members.json',
+                data=member_data
+            )
 
     return
 
