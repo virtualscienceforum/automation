@@ -7,6 +7,7 @@ import datetime
 import json
 import logging
 
+import pandas
 import jinja2
 import requests
 import pytz
@@ -132,15 +133,12 @@ def add_zoom_registrants_to_mailgun():
     meetings = common.all_meetings("me")
 
     # Filter by past meetings
+    time_now = datetime.datetime.now(tz=pytz.UTC)
+    time_yesterday = time_now - datetime.timedelta(days=1)
     past_lrc = [
         meeting for meeting in meetings
-        if ("Long Range" in meeting['topic']
-            and pandas.to_datetime(meeting['start_time']) < datetime.datetime.now(tz=pytz.UTC)
-           )
+        if time_yesterday < pandas.to_datetime(meeting['start_time']) < time_now
     ]
-
-    # Restrict to past 20 meetings (not likely to have more than 20 in a day)
-    past_lrc = past_lrc[-20:]
 
     for lrc in past_lrc:
         # Get registrants
@@ -197,6 +195,9 @@ if __name__ == "__main__":
 
     # Add people who signed up for the mailing list through Zoom registration
     # to our own mailgun mailinglist
-    add_zoom_registrants_to_mailgun()
+    try:
+        add_zoom_registrants_to_mailgun()
+    except:
+        logging.error("Could not move registrants to the mailgun list.")
 
     exceptions.reraise()
