@@ -201,6 +201,11 @@ def meeting_registrants(zoom_meeting_id: int) -> dict:
             headers=zoom_headers(),
             params={"next_page_token": next_page_token}
         ).json()
+
+        # Registration was not enabled for this meeting
+        if( response.get("code",200) == 300 ):
+            return []
+
         registrants += response["registrants"]
         next_page_token = response["next_page_token"]
         if not next_page_token:
