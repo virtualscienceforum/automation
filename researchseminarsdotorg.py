@@ -129,7 +129,7 @@ def publish_to_researchseminars(talk):
         talk_payload["paper_link"] = "https://arxiv.org/abs/"+talk.get('preprint')
 
     # Add extra authors if available
-    if( talk.get('authors', '') !+ ''):
+    if( talk.get('authors', '') != ''):
         talk_payload["abstract"] += "\n\n" + "Authors: " + talk.get('authors')
 
     # Make request to remote API
