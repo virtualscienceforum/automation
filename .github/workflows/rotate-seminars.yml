@@ -1,9 +1,5 @@
 name: Hourly speakers' corner updates
 
-on:
-  schedule:
-    - cron: '30 * * * *'
-
 jobs:
   rotate:
     runs-on: ubuntu-latest
