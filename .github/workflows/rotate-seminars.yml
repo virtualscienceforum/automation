@@ -4,6 +4,10 @@ jobs:
   rotate:
     runs-on: ubuntu-latest
 
+on:
+  schedule:
+    - cron: '30 * * * *'
+
     steps:
       - name: checkout
         uses: actions/checkout@v2
