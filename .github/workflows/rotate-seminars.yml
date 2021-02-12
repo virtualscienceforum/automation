@@ -1,12 +1,12 @@
 name: Hourly speakers' corner updates
 
-jobs:
-  rotate:
-    runs-on: ubuntu-latest
-
 on:
   schedule:
     - cron: '30 * * * *'
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
 
     steps:
       - name: checkout
