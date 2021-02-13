@@ -220,6 +220,7 @@ def email_video_link(talk):
 if __name__ == "__main__":
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
+    common.wait_until(45)
     now = datetime.datetime.now(tz=pytz.UTC)
     exceptions = common.CollectExceptions()
 

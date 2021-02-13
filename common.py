@@ -9,6 +9,8 @@ import jwt
 import requests
 import github
 import datetime
+import logging
+from time import sleep
 from ruamel.yaml import YAML
 
 yaml = YAML()
@@ -46,6 +48,16 @@ class CollectExceptions:
             exc_value
             for _, exc_value in self.exceptions
         ])
+
+
+def wait_until(minute):
+    """Sleep until a specified minute of the hour starts."""
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    desired = now.replace(minute=minute, second=0, microsecond=0)
+    if desired < now:
+        desired += datetime.timedelta(hours=1)
+    logging.info(f"Sleeping until {desired}")
+    sleep((desired - now).total_seconds())
 
 
 def make_zoom_headers(duration: float=100) -> callable:
