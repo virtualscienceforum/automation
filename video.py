@@ -162,6 +162,11 @@ def upload(file, title, description):
     return video_id
 
 
+def sanitize_for_youtube(text):
+    """Youtube bans < and >, so we replace these characters with larger versions."""
+    return text.replace("<", "＜").replace(">", "＞")
+
+
 def parse_duration(time_string):
     return parse(time_string) - parse("00:00")
 
@@ -208,7 +213,11 @@ if __name__ == "__main__":
         + f"Authors: {talk['authors']}\n\n{talk['abstract']}"
     )[:1000]
 
-    talk["youtube_id"] = upload(f"{meeting_id}_trimmed.mp4", title, abstract)
+    talk["youtube_id"] = upload(
+        f"{meeting_id}_trimmed.mp4",
+        sanitize_for_youtube(title),
+        sanitize_for_youtube(abstract),
+    )
     logger.info(f"Uploaded {talk['youtube_id']}")
     del talk['zoom_meeting_id'], talk["email"], talk["registration_url"]
 
