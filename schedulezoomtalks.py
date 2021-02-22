@@ -27,6 +27,9 @@ registration for it. Below please find the relevant information that you will
 need. We have also posted step by step instructions for the next steps in your
 [application]({{issue_url}}).
 
+For you convenience, a template email you may use for the talk announcement at
+your institution is at the end of this email.
+
 **Please read these instructions carefully, and explicitly confirm that you
 read them, understood, and received this email.**
 
@@ -37,7 +40,6 @@ Your meeting information:
 - Time slot: {{ meeting_start }}—{{ meeting_end }} UTC
 - Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
-- Please find the template you may use for the talk announcement at your institution below
 
 
 Thank you in advance for contributing to the Speakers' Corner!
@@ -52,7 +54,7 @@ I would like to invite you to my upcoming talk titled {{ meeting_talk_title }} t
 
 To see the talk abstract and register please go to [VSF Speakers' corner website](https://virtualscienceforum.org/#/speakers-corner) or register directly using [this link]({{ registration_url }}).
 
-I am looking forward to see you there!
+I am looking forward to seeing you there!
 
 Best regards, {{ author }}
 
