@@ -31,7 +31,7 @@ For you convenience, a template email you may use for the talk announcement at
 your institution is at the end of this email.
 
 **Please read these instructions carefully, and explicitly confirm that you
-read them, understood, and received this email.**
+read them, understood them, and that you received this email.**
 
 Your meeting information:
 
@@ -40,9 +40,11 @@ Your meeting information:
 - Time slot: {{ meeting_start }}—{{ meeting_end }} UTC
 - Your personal Zoom meeting [login link]({{ meeting_zoom_link }})
 - Host key: {{ meeting_host_key }}
+    - **The host key is required for claiming host functions in your Zoom meeting. Without it, you won't be able to share your screen.**
 
+As a final remark, consider inviting a colleague who can act as a moderator during your talk (helping you keep track of questions).
 
-Thank you in advance for contributing to the Speakers' Corner!
+Thank you in advance for contributing to the Speakers' Corner series!
 The VSF team
 
 
