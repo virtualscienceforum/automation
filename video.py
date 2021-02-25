@@ -23,7 +23,6 @@ import common
 
 doi_regex = re.compile(r"10.\d{4,9}/[-._;()/:A-Z0-9]+")
 
-
 def download_video(zoom_meeting_id):
     files = requests.get(
         f"https://api.zoom.us/v2/meetings/{zoom_meeting_id}/recordings",
@@ -115,7 +114,7 @@ def ping_youtube():
     ).execute()
 
 
-def upload(file, title, description):
+def upload(file, title, description, playlist_id):
     youtube = googleapiclient.discovery.build(
         "youtube", "v3", credentials=credentials()
     )
@@ -146,7 +145,7 @@ def upload(file, title, description):
             part="snippet",
             body={
             "snippet": {
-                "playlistId": "PLqJ4D_Db7W_qBCNdmJ2QaoenrXWCs82v0",
+                "playlistId": playlist_id,
                 "position": 0,
                 "resourceId": {
                 "kind": "youtube#video",
@@ -217,6 +216,7 @@ if __name__ == "__main__":
         f"{meeting_id}_trimmed.mp4",
         sanitize_for_youtube(title),
         sanitize_for_youtube(abstract),
+        playlist_id="PLqJ4D_Db7W_qBCNdmJ2QaoenrXWCs82v0"
     )
     logger.info(f"Uploaded {talk['youtube_id']}")
     del talk['zoom_meeting_id'], talk["email"], talk["registration_url"]
