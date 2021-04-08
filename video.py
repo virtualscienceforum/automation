@@ -94,6 +94,13 @@ def load_credentials():
 
         if actual_credentials.expired:
             actual_credentials.refresh(Request())
+            # Update the stored value
+            gh = common.github.Github(os.getenv("VSF_BOT_TOKEN"))
+            repo = gh.get_repo("virtualscienceforum/automation")
+            repo.create_secret(
+                "YOUTUBE_CREDENTIALS",
+                actual_credentials.to_json()
+            )
 
         return actual_credentials
 
@@ -121,7 +128,7 @@ def upload(file, title, description, playlist_id):
 
     request = youtube.videos().insert(
         part="snippet,status",
-        notifySubscribers=False,
+        notifySubscribers=True,
         body={
             "snippet": {
                 "title": title,
