@@ -225,11 +225,16 @@ if __name__ == "__main__":
     title = f"“{talk['title']}” by {talk['speaker_name']}"[:100]
     abstract = (
         (
-            ('https://arxiv.org/abs/' + talk['preprint'] + '\n\n')
-            if not doi_regex.match(talk.get('preprint', ''))
+            ('https://arxiv.org/abs/' + talk["preprint"] + '\n\n')
+            if "preprint" in talk and not doi_regex.match(talk["preprint"])
             else ''
         )
-        + f"Authors: {talk['authors']}\n\n{talk['abstract']}"
+        + (
+            f"Authors: {talk['authors']}\n\n"
+            if "authors" in talk
+            else ""
+        )
+        + talk['abstract']
     )[:1000]
 
     talk["youtube_id"] = upload(
