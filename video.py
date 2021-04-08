@@ -179,8 +179,8 @@ def parse_duration(time_string):
 
 def intervals_from_issue(issue):
     approval_regex = re.compile(
-        r".*(?:i approve publishing of|the speaker approves publishing) the recording.*start is\s+"
-        r"(?P<start>\d\d:\d\d:\d\d).*end is\s+(?P<end>\d\d:\d\d:\d\d)",
+        r".*(?:i|speaker) approves? publishing(?: of)? the recording.*start(?: is)?\s+"
+        r"(?P<start>\d\d:\d\d:\d\d).*end(?: is)?\s+(?P<end>\d\d:\d\d:\d\d).*",
         flags=(re.MULTILINE | re.DOTALL)
     )
     return next(
