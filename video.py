@@ -179,7 +179,7 @@ def parse_duration(time_string):
 
 def intervals_from_issue(issue):
     approval_regex = re.compile(
-        r".*i approve publishing of the recording.*start is\s+"
+        r".*(?:i approve publishing of|the speaker approves publishing) the recording.*start is\s+"
         r"(?P<start>\d\d:\d\d:\d\d).*end is\s+(?P<end>\d\d:\d\d:\d\d)",
         flags=(re.MULTILINE | re.DOTALL)
     )
@@ -188,7 +188,10 @@ def intervals_from_issue(issue):
         for comment in issue.get_comments().reversed
         if (
             match := approval_regex.match(comment.body.lower())
-        ) and (issue.user == comment.user)
+        ) and (
+            issue.user == comment.user
+            or issue.repository.has_in_collaborators(comment.user)
+        )
     )
 
 
