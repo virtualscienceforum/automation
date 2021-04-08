@@ -61,7 +61,7 @@ between(t,{{i[0].seconds}},{{i[1].seconds}})\
 
 def trim(input: str, intervals: List, output: str):
     """Trim a video.
-    
+
     input : str
         input filename
     intervals : list((start, end))
@@ -192,6 +192,12 @@ def intervals_from_issue(issue):
     )
 
 
+playlists = {
+    "speakers_corner": "PLqJ4D_Db7W_qBCNdmJ2QaoenrXWCs82v0",
+    "lrc": "PLqJ4D_Db7W_p5KNu8yDhoGyY36g75z3p2",
+}
+
+
 if __name__ == "__main__":
     ping_youtube()
     yaml = common.yaml
@@ -215,7 +221,11 @@ if __name__ == "__main__":
     logger.info(f"Uploading the video.")
     title = f"“{talk['title']}” by {talk['speaker_name']}"[:100]
     abstract = (
-        (('https://arxiv.org/abs/' + talk['preprint'] + '\n\n') if not doi_regex.match(talk['preprint']) else '')
+        (
+            ('https://arxiv.org/abs/' + talk['preprint'] + '\n\n')
+            if not doi_regex.match(talk.get('preprint', ''))
+            else ''
+        )
         + f"Authors: {talk['authors']}\n\n{talk['abstract']}"
     )[:1000]
 
@@ -223,10 +233,13 @@ if __name__ == "__main__":
         f"{meeting_id}_trimmed.mp4",
         sanitize_for_youtube(title),
         sanitize_for_youtube(abstract),
-        playlist_id="PLqJ4D_Db7W_qBCNdmJ2QaoenrXWCs82v0"
+        playlist_id=playlists[talk["event_type"]],
     )
     logger.info(f"Uploaded {talk['youtube_id']}")
-    del talk['zoom_meeting_id'], talk["email"], talk["registration_url"]
+    talk = {
+        k: v for k, v in talk.items()
+        if k not in 'zoom_meeting_id email registration_url'.split()
+    }
 
     # Get the data again because someone might have pushed in the meantime.
     talks, sha = common.talks_data()
