@@ -23,7 +23,6 @@ TALKS_FILE = "talks.yml"
 MAILGUN_BASE_URL = "https://api.eu.mailgun.net/v3/"
 MAILGUN_DOMAIN = "mail.virtualscienceforum.org/"
 
-
 class CollectExceptions:
     def __init__(self):
         self.exceptions = []

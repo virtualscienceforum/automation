@@ -1,8 +1,6 @@
 
 #!/usr/bin/env python
 
-import os
-import hashlib
 import datetime
 import json
 import logging
@@ -11,10 +9,13 @@ import pandas
 import jinja2
 import requests
 import pytz
-from dateutil.parser import parse
 
 import common
-from common import zoom_request
+from common import api_query
+
+LIST = 'temporary_test_list'
+MAILGUN_DOMAIN = 'mail.virtualscienceforum.org'
+MAILGUN_ENDPOINT = '/lists/' + LIST + '@' + MAILGUN_DOMAIN + '/members'
 
 RECORDING_AVAILABLE_TEMPLATE = jinja2.Template("""Dear {{speaker_name}},
 
@@ -144,7 +145,7 @@ def add_zoom_registrants_to_mailgun():
         # Get registrants
         registrants = common.meeting_registrants(meeting['id'])
 
-        if( len(registrants) != 0 ):
+        if registrants:
             # Filter those who want to sign up for emails
             member_data = dict(members=json.dumps([
                 dict(address=i['email'], name="{0} {1}".format(i.get('first_name'), i.get('last_name','')))
@@ -152,7 +153,7 @@ def add_zoom_registrants_to_mailgun():
             ]))
 
             api_query(
-                post, f'lists/{announce_list}/members.json',
+                requests.post, f'lists/{MAILGUN_ENDPOINT}/members.json',
                 data=member_data
             )
 

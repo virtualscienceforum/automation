@@ -98,7 +98,7 @@ The title and the abstract of the talk are below.
 
 **Abstract:** {{abstract}}
 
-Enjoy the talk,  
+Enjoy the talk,
 The Virtual Science Forum team
 """)
 
