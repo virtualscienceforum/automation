@@ -33,12 +33,11 @@ with the following phrase:
 
 Naturally, you may download and use the video for your own purposes.
 
-Best,
+Best,  
 Virtual Science Forum team
 """)
 
 WEEKLY_ANNOUNCEMENT_TEMPLATE = jinja2.Template("""Dear %recipient_name%,
-
 
 {% if this_week_talks %}This week the Speakers' Corner seminar series will have the following talks:
 
@@ -54,13 +53,14 @@ WEEKLY_ANNOUNCEMENT_TEMPLATE = jinja2.Template("""Dear %recipient_name%,
 
 To view the abstracts and register please visit the [Speakers' Corner page](https://virtualscienceforum.org/#/speakers-corner).
 
-Best regards,
+Best regards,  
 The VSF Organizers
 
 ---
 You are receiving this email because you are signed up for the Speakers' Corner weekly program updates.
 To unsubscribe visit [this URL](%mailing_list_unsubscribe_url%).
 """)
+
 
 def email_video_link(talk):
     """Send the presenter a link to their video, asking to confirm."""
@@ -89,6 +89,7 @@ def email_video_link(talk):
     )
     logging.info(f"Notified the speaker of {talk['zoom_meeting_id']} about recording.")
     return response
+
 
 def weekly_speakers_corner_update(talks):
     # Filter out only the speakers' corner talks
@@ -158,6 +159,7 @@ def add_zoom_registrants_to_mailgun():
             )
 
     return
+
 
 if __name__ == "__main__":
     logger = logging.getLogger()

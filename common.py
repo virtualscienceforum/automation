@@ -202,7 +202,7 @@ def meeting_registrants(zoom_meeting_id: int) -> dict:
         ).json()
 
         # Registration was not enabled for this meeting
-        if( response.get("code",200) == 300 ):
+        if response.status_code == 300:
             return []
 
         registrants += response["registrants"]
