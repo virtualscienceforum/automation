@@ -12,8 +12,8 @@ import pytz
 import common
 from common import api_query
 
-LIST = 'temporary_test_list'
-MAILGUN_ENDPOINT = '/lists/' + LIST + '@' + common.MAILGUN_DOMAIN + '/members'
+LIST = 'vsf-announce'
+MEMBERS_ENDPOINT = f'/lists/{LIST}@{common.MAILGUN_DOMAIN}/members.json'
 
 RECORDING_AVAILABLE_TEMPLATE = jinja2.Template("""Dear {{speaker_name}},
 
@@ -139,10 +139,7 @@ def subscribe_registrants_to_mailinglist(zoom_meeting_id):
             for i in registrants if (i.get('May we contact you about future Virtual Science Forum events?','') == "Yes")
         ]))
 
-        api_query(
-            requests.post, f'lists/{MAILGUN_ENDPOINT}/members.json',
-            data=member_data
-        )
+        api_query(requests.post, MEMBERS_ENDPOINT, data=member_data)
 
     return
 
