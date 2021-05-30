@@ -5,7 +5,6 @@ import datetime
 import json
 import logging
 
-import pandas
 import jinja2
 import requests
 import pytz
@@ -14,8 +13,7 @@ import common
 from common import api_query
 
 LIST = 'temporary_test_list'
-MAILGUN_DOMAIN = 'mail.virtualscienceforum.org'
-MAILGUN_ENDPOINT = '/lists/' + LIST + '@' + MAILGUN_DOMAIN + '/members'
+MAILGUN_ENDPOINT = '/lists/' + LIST + '@' + common.MAILGUN_DOMAIN + '/members'
 
 RECORDING_AVAILABLE_TEMPLATE = jinja2.Template("""Dear {{speaker_name}},
 
@@ -129,34 +127,22 @@ def weekly_speakers_corner_update(talks):
     return response
 
 
-def add_zoom_registrants_to_mailgun():
+def subscribe_registrants_to_mailinglist(zoom_meeting_id):
     """Add registrants from Zoom to Mailgun mailing list."""
-    # Get all meetings
-    meetings = common.all_meetings("me")
+    # Get registrants
+    registrants = common.meeting_registrants(zoom_meeting_id)
 
-    # Filter by past meetings
-    time_now = datetime.datetime.now(tz=pytz.UTC)
-    time_yesterday = time_now - datetime.timedelta(days=1)
-    past_meetings = [
-        meeting for meeting in meetings
-        if time_yesterday < pandas.to_datetime(meeting['start_time']) < time_now
-    ]
+    if registrants:
+        # Filter those who want to sign up for emails
+        member_data = dict(members=json.dumps([
+            dict(address=i['email'], name="{0} {1}".format(i.get('first_name'), i.get('last_name','')))
+            for i in registrants if (i.get('May we contact you about future Virtual Science Forum events?','') == "Yes")
+        ]))
 
-    for meeting in past_meetings:
-        # Get registrants
-        registrants = common.meeting_registrants(meeting['id'])
-
-        if registrants:
-            # Filter those who want to sign up for emails
-            member_data = dict(members=json.dumps([
-                dict(address=i['email'], name="{0} {1}".format(i.get('first_name'), i.get('last_name','')))
-                for i in registrants if (i.get('May we contact you about future Virtual Science Forum events?','') == "Yes")
-            ]))
-
-            api_query(
-                requests.post, f'lists/{MAILGUN_ENDPOINT}/members.json',
-                data=member_data
-            )
+        api_query(
+            requests.post, f'lists/{MAILGUN_ENDPOINT}/members.json',
+            data=member_data
+        )
 
     return
 
@@ -179,29 +165,26 @@ if __name__ == "__main__":
             weekly_speakers_corner_update(talks)
             logging.info(f"Sent a weekly Speakers' corner announcement")
 
-    # Email the speaker their video link for a talk that took place 10h ago
-    # In principle we could be faster, but this is to guarantee that the
-    # Transcription finished.
-    with exceptions:
-        finished_talk = next(
-            (
-                talk for talk in talks
-                if (now - talk["time"]).total_seconds() // 3600 == 9
-            ),
-            None
-        )
-        if finished_talk is not None:
-            email_video_link(finished_talk)
-            logging.info(
-                "Sent a video link to the speaker from "
-                f"{finished_talk['zoom_meeting_id']}"
-            )
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    for talk in talks:
+        # Select the talks from yesterday
+        if not(
+            datetime.timedelta(days=2) > today - talk["time"] > datetime.timedelta(days=1)
+        ):
+            continue
 
-    # Add people who signed up for the mailing list through Zoom registration
-    # to our own mailgun mailinglist
-    try:
-        add_zoom_registrants_to_mailgun()
-    except:
-        logging.error("Could not move registrants to the mailgun list.")
+        # Email speakers' corner speakers a video link for approval.
+        if talk["event_type"] == "speakers_corner":
+            with exceptions:
+                email_video_link(talk)
+                logging.info(
+                    "Sent a video link to the speaker from "
+                    f"{talk['zoom_meeting_id']}"
+                )
+
+        # Add people who signed up for the mailing list through Zoom registration
+        # to our own mailgun mailing list
+        with exceptions:
+            subscribe_registrants_to_mailinglist(talk["zoom_meeting_id"])
 
     exceptions.reraise()
