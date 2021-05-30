@@ -80,13 +80,13 @@ def publish_to_researchseminars(talk):
 
     # Set series ID
     series_id = "none"
-    if( talk["event_type"] == "speakers_corner" ):
+    if talk["event_type"] == "speakers_corner":
         series_id = "speakerscorner"
-    if( talk["event_type"] == "lrc" ):
+    if talk["event_type"] == "lrc":
         series_id = "VSFLRC"
 
     # Check that we have a valid series_id
-    if( series_id == "none" ):
+    if series_id == "none":
         print("Invalid series_id for publishing to researchseminars")
         return
 
@@ -129,8 +129,8 @@ def publish_to_researchseminars(talk):
         talk_payload["paper_link"] = "https://arxiv.org/abs/"+talk.get('preprint')
 
     # Add extra authors if available
-    if( talk.get('authors', '') != ''):
-        talk_payload["abstract"] += "\n\n" + "Authors: " + talk.get('authors')
+    if (authors := talk.get('authors', '')):
+        talk_payload["abstract"] += "\n\n" + "Authors: " + authors
 
     # Make request to remote API
     series_ctr, warnings = add_talk_to_series(series_id, talk_payload, authorization)
