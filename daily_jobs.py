@@ -13,7 +13,7 @@ import common
 from common import api_query
 
 LIST = 'vsf-announce'
-MEMBERS_ENDPOINT = f'/lists/{LIST}@{common.MAILGUN_DOMAIN}/members.json'
+MEMBERS_ENDPOINT = f'lists/{LIST}@{common.MAILGUN_DOMAIN}members.json'
 
 RECORDING_AVAILABLE_TEMPLATE = jinja2.Template("""Dear {{speaker_name}},
 
@@ -31,7 +31,7 @@ with the following phrase:
 
 Naturally, you may download and use the video for your own purposes.
 
-Best,  
+Best,
 Virtual Science Forum team
 """)
 
@@ -51,7 +51,7 @@ WEEKLY_ANNOUNCEMENT_TEMPLATE = jinja2.Template("""Dear %recipient_name%,
 
 To view the abstracts and register please visit the [Speakers' Corner page](https://virtualscienceforum.org/#/speakers-corner).
 
-Best regards,  
+Best regards,
 The VSF Organizers
 
 ---
