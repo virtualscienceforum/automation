@@ -28,7 +28,7 @@ MEETING_MESSAGE_FOOTER = """
 You are receiving this email because you registered for a VSF Zoom meeting with ID {}.
 """.format
 
-if __name__ == "__main__":
+def main():
     yaml = YAML()
     repo = common.vsf_repo()
     issue = repo.get_issue(int(os.getenv("ISSUE_NUMBER")))
@@ -49,16 +49,26 @@ if __name__ == "__main__":
             }
         )
     else:
-        meeting_id = int(to)
+        try:
+            key, value = "zoom_meeting_id", int(to)
+        except ValueError:
+            if not to.startswith("#"):
+                issue.create_comment("I couldn't parse to whom to send the email :(")
+                return
+            key, value = "workflow_issue", int(to[1:])
         # We are sending an email to zoom meeting participants
         talks, _ = common.talks_data(repo=repo)
         try:
-            talk = next(talk for talk in talks if talk.get("zoom_meeting_id") == meeting_id)
+            talk = next(talk for talk in talks if talk.get(key) == value)
         except StopIteration:
-            # Not a speakers corner talk, no extra data associated.
-            talk = {"zoom_meeting_id": meeting_id}
+            if key == "workflow_issue":
+                issue.create_comment("I couldn't parse to whom to send the email :(")
+                return
 
-        body += MEETING_MESSAGE_FOOTER(meeting_id)
+            # Not a tracked talk, no extra data associated.
+            talk = {"zoom_meeting_id": value}
+
+        body += MEETING_MESSAGE_FOOTER(talk["zoom_meeting_id"])
 
         response = common.send_to_participants(
             template=jinja2.Template(body),
@@ -69,3 +79,7 @@ if __name__ == "__main__":
 
     issue.create_comment("I sent the email 🎉!")
     issue.edit(state="closed")
+
+
+if __name__ == "__main__":
+    main()
