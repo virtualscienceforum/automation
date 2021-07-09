@@ -9,6 +9,8 @@ import jwt
 import requests
 import github
 import datetime
+import logging
+from time import sleep
 from ruamel.yaml import YAML
 
 yaml = YAML()
@@ -20,7 +22,6 @@ TALKS_FILE = "talks.yml"
 
 MAILGUN_BASE_URL = "https://api.eu.mailgun.net/v3/"
 MAILGUN_DOMAIN = "mail.virtualscienceforum.org/"
-
 
 class CollectExceptions:
     def __init__(self):
@@ -46,6 +47,16 @@ class CollectExceptions:
             exc_value
             for _, exc_value in self.exceptions
         ])
+
+
+def wait_until(minute):
+    """Sleep until a specified minute of the hour starts."""
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    desired = now.replace(minute=minute, second=0, microsecond=0)
+    if desired < now:
+        desired += datetime.timedelta(hours=1)
+    logging.info(f"Sleeping until {desired}")
+    sleep((desired - now).total_seconds())
 
 
 def make_zoom_headers(duration: float=100) -> callable:
@@ -188,7 +199,13 @@ def meeting_registrants(zoom_meeting_id: int) -> dict:
             f"https://api.zoom.us/v2/meetings/{zoom_meeting_id}/registrants",
             headers=zoom_headers(),
             params={"next_page_token": next_page_token}
-        ).json()
+        )
+
+        # Registration was not enabled for this meeting
+        if response.status_code == 400:
+            return []
+
+        response = response.json()
         registrants += response["registrants"]
         next_page_token = response["next_page_token"]
         if not next_page_token:

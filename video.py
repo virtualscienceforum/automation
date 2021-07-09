@@ -23,7 +23,6 @@ import common
 
 doi_regex = re.compile(r"10.\d{4,9}/[-._;()/:A-Z0-9]+")
 
-
 def download_video(zoom_meeting_id):
     files = requests.get(
         f"https://api.zoom.us/v2/meetings/{zoom_meeting_id}/recordings",
@@ -62,7 +61,7 @@ between(t,{{i[0].seconds}},{{i[1].seconds}})\
 
 def trim(input: str, intervals: List, output: str):
     """Trim a video.
-    
+
     input : str
         input filename
     intervals : list((start, end))
@@ -95,6 +94,13 @@ def load_credentials():
 
         if actual_credentials.expired:
             actual_credentials.refresh(Request())
+            # Update the stored value
+            gh = common.github.Github(os.getenv("VSF_BOT_TOKEN"))
+            repo = gh.get_repo("virtualscienceforum/automation")
+            repo.create_secret(
+                "YOUTUBE_CREDENTIALS",
+                actual_credentials.to_json()
+            )
 
         return actual_credentials
 
@@ -115,14 +121,14 @@ def ping_youtube():
     ).execute()
 
 
-def upload(file, title, description):
+def upload(file, title, description, playlist_id):
     youtube = googleapiclient.discovery.build(
         "youtube", "v3", credentials=credentials()
     )
 
     request = youtube.videos().insert(
         part="snippet,status",
-        notifySubscribers=False,
+        notifySubscribers=True,
         body={
             "snippet": {
                 "title": title,
@@ -146,7 +152,7 @@ def upload(file, title, description):
             part="snippet",
             body={
             "snippet": {
-                "playlistId": "PLqJ4D_Db7W_qBCNdmJ2QaoenrXWCs82v0",
+                "playlistId": playlist_id,
                 "position": 0,
                 "resourceId": {
                 "kind": "youtube#video",
@@ -162,14 +168,19 @@ def upload(file, title, description):
     return video_id
 
 
+def sanitize_for_youtube(text):
+    """Youtube bans < and >, so we replace these characters with larger versions."""
+    return text.replace("<", "＜").replace(">", "＞")
+
+
 def parse_duration(time_string):
     return parse(time_string) - parse("00:00")
 
 
 def intervals_from_issue(issue):
     approval_regex = re.compile(
-        r".*i approve publishing of the recording.*start is\s+"
-        r"(?P<start>\d\d:\d\d:\d\d).*end is\s+(?P<end>\d\d:\d\d:\d\d)",
+        r".*(?:i|speaker) approves? publishing(?: of)? the recording.*start(?: is)?\s+"
+        r"(?P<start>\d\d:\d\d:\d\d).*end(?: is)?\s+(?P<end>\d\d:\d\d:\d\d).*",
         flags=(re.MULTILINE | re.DOTALL)
     )
     return next(
@@ -177,8 +188,17 @@ def intervals_from_issue(issue):
         for comment in issue.get_comments().reversed
         if (
             match := approval_regex.match(comment.body.lower())
-        ) and (issue.user == comment.user)
+        ) and (
+            issue.user == comment.user
+            or issue.repository.has_in_collaborators(comment.user)
+        )
     )
+
+
+playlists = {
+    "speakers_corner": "PLqJ4D_Db7W_qBCNdmJ2QaoenrXWCs82v0",
+    "lrc": "PLqJ4D_Db7W_p5KNu8yDhoGyY36g75z3p2",
+}
 
 
 if __name__ == "__main__":
@@ -204,13 +224,30 @@ if __name__ == "__main__":
     logger.info(f"Uploading the video.")
     title = f"“{talk['title']}” by {talk['speaker_name']}"[:100]
     abstract = (
-        (('https://arxiv.org/abs/' + talk['preprint'] + '\n\n') if not doi_regex.match(talk['preprint']) else '')
-        + f"Authors: {talk['authors']}\n\n{talk['abstract']}"
+        (
+            ('https://arxiv.org/abs/' + talk["preprint"] + '\n\n')
+            if "preprint" in talk and not doi_regex.match(talk["preprint"])
+            else ''
+        )
+        + (
+            f"Authors: {talk['authors']}\n\n"
+            if "authors" in talk
+            else ""
+        )
+        + talk['abstract']
     )[:1000]
 
-    talk["youtube_id"] = upload(f"{meeting_id}_trimmed.mp4", title, abstract)
+    talk["youtube_id"] = upload(
+        f"{meeting_id}_trimmed.mp4",
+        sanitize_for_youtube(title),
+        sanitize_for_youtube(abstract),
+        playlist_id=playlists[talk["event_type"]],
+    )
     logger.info(f"Uploaded {talk['youtube_id']}")
-    del talk['zoom_meeting_id'], talk["email"], talk["registration_url"]
+    talk = {
+        k: v for k, v in talk.items()
+        if k not in 'zoom_meeting_id email registration_url'.split()
+    }
 
     # Get the data again because someone might have pushed in the meantime.
     talks, sha = common.talks_data()
