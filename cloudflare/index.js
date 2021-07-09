@@ -465,8 +465,8 @@ async function handleRequest(request) {
     const r = new Router()
 
     //r.get('.*/bar', () => new Response('responding for /bar'))
-    r.get('/LRC', request => respondWithRawHTML(websiteWithTalks))
-    r.post('/registrationForm', request => renderRegistrationForm(request))
+    //r.get('/LRC', request => respondWithRawHTML(websiteWithTalks))
+    //r.post('/registrationForm', request => renderRegistrationForm(request))
     r.post('/register', request => handleZoomRegistrationRequest(request))
     r.post('/mailinglist', request => handleMailingListSignupRequest(request) )
 
