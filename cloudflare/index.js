@@ -13,121 +13,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 }
 
-const websiteWithTalks = `
-<!DOCTYPE html>
-<head>
-</head>
-<html>
-<body>
-<form id="registrationForm" method="post" action="/registrationForm" style="border:1px solid #ccc">
-  <h2> New Upcoming LRC Colloquim by Evert </h2>
-  <input type="hidden" name="speakerName" id="speakerName" value="Evert" required>
-  <input type="hidden" name="meetingID" id="meetingID" value="abcdefg" required>
-  <div class="clearfix">
-    <button type="submit" class="registerbtn">Register</button>
-  </div>
-</form>
-</body>
-</html>
-`
-
-const registrationForm = `
-<!DOCTYPE html>
-<head>
-<script src='https://www.google.com/recaptcha/api.js'></script>
-</head>
-<html>
-<style>
-body {font-family: Arial, Helvetica, sans-serif;}
-* {box-sizing: border-box}
-/* Full-width input fields */
-input[type=text] {
-  width: 100%;
-  padding: 15px;
-  margin: 5px 0 22px 0;
-  display: inline-block;
-  border: none;
-  background: #f1f1f1;
-}
-input[type=text]:focus {
-  background-color: #ddd;
-  outline: none;
-}
-hr {
-  border: 1px solid #f1f1f1;
-  margin-bottom: 25px;
-}
-/* Set a style for all buttons */
-button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 14px 20px;
-  margin: 8px 0;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  opacity: 0.9;
-}
-button:hover {
-  opacity:1;
-}
-/* Float registration button and add an equal width */
-.registerbtn {
-  float: left;
-  width: 50%;
-}
-/* Add padding to container elements */
-.container {
-  padding: 16px;
-}
-/* Clear floats */
-.clearfix::after {
-  content: "";
-  clear: both;
-  display: table;
-}
-/* Change styles for cancel button and signup button on extra small screens */
-@media screen and (max-width: 300px) {
-  .cancelbtn, .signupbtn {
-     width: 100%;
-  }
-}
-</style>
-<body>
-<form id="registrationForm" method="post" action="/register" style="border:1px solid #ccc">
-  <div class="container">
-    <h1>Sign Up</h1>
-    <p>Please fill in this form to register for the talk by SPEAKERNAME.</p>
-    <hr>
-    <label for="firstname"><b>First Name</b></label>
-    <input type="text" placeholder="Enter your first name" name="firstname" id="name" required>
-    <label for="lastname"><b>Last Name</b></label>
-    <input type="text" placeholder="Enter your last name" name="lastname" id="name" required>
-
-    <label for="address"><b>Email</b></label>
-    <input type="email" placeholder="Enter your Email" name="address" id="address" required>
-    <label for="addressconfirm"><b>Confirm Email</b></label>
-    <input type="email" placeholder="Confirm your Email" name="addressconfirm" id="address" required>
-
-    <div id="checkboxes">
-        <ul id="checkboxes" style='list-style:none'>
-          <li> <input type="checkbox" name="instructions-checkbox" value="confirm-instructions" required> Please confirm you have read the <a href=http://virtualscienceforum.org/#/attendeeguide>participant instructions*</a> </li>
-          <li> <input type="checkbox" name="contact-checkbox" value="confirm-contact" checked> Please check this box if we may contact you about future VSF events </li>
-        </ul>
-    </div>
-
-    <input type="hidden" name="meetingID" id="meetingID" value="MEETINGID" required>
-
-    <div id="recaptcha" name="recaptcha" class="g-recaptcha" data-sitekey="6Lf37MoZAAAAAF19QdljioXkLIw23w94QWpy9c5E"></div>
-    <div class="clearfix">
-      <button type="submit" class="registerbtn">Register</button>
-    </div>
-  </div>
-</form>
-</body>
-</html>
-`
-
 const registrationConfirmationEmail = `
   <!DOCTYPE html>
   <html>
@@ -312,6 +197,7 @@ async function handleZoomRegistrationRequest(request) {
       "title": "Please confirm you agree to follow the participant instructions: http://virtualscienceforum.org/#/attendeeguide",
       "value": "Yes",
       }]
+    payload["auto_approve"] = 1
 
     var jwt = require('jsonwebtoken');
     var token = jwt.sign({ iss: ZOOMAPIKEY }, ZOOMAPISECRET, { algorithm: 'HS256', expiresIn: '1h' });
@@ -331,10 +217,12 @@ async function handleZoomRegistrationRequest(request) {
     const response = await fetch(registerURL, requestbody)
 
     // If we get here, we managed to register
+    /*
     const sendmailresponse = await sendRegistrationConfirmationEmail(bodydata.address, bodydata.name, "LRC")
     if( sendmailresponse.status != 200 ) {
       return new Response("You succesfully registered, but sending the confirmation email failed.", {status:sendmailresponse.status, headers:corsHeaders})
     }
+    */
     return new Response("Succesfully registered. You will receive a confirmation email.", {status:200, headers:corsHeaders})
   }
   catch (err)
@@ -343,7 +231,6 @@ async function handleZoomRegistrationRequest(request) {
     return new Response(err.stack, { status: 500, headers:corsHeaders })
   }
 }
-
 
 async function sendRegistrationConfirmationEmail(address, name, talk) {
 
@@ -464,9 +351,6 @@ async function handleRequest(request) {
     // Replace with the appropriate paths and handlers
     const r = new Router()
 
-    //r.get('.*/bar', () => new Response('responding for /bar'))
-    //r.get('/LRC', request => respondWithRawHTML(websiteWithTalks))
-    //r.post('/registrationForm', request => renderRegistrationForm(request))
     r.post('/register', request => handleZoomRegistrationRequest(request))
     r.post('/mailinglist', request => handleMailingListSignupRequest(request) )
 
