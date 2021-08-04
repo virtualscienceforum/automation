@@ -68,6 +68,34 @@ function validateMailingListFormData(bodydata)
   return true
 }
 
+async function subscribeToMailingList(listName, username, useremail) {
+
+  var addMemberURL = MAILGUN_API_URL + '/lists/' + listName + '@' + DOMAIN + '/members'
+
+  const userdata = {}
+  userdata['name'] username
+  userdata['address'] = useremail
+  // Toggle subscribed
+  userdata['subscribed'] = true
+  // Update user if present
+  userdata['upsert'] = true
+
+  // Define the payload
+  let bodyoptions = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Length": userdata.length,
+      'Authorization': 'Basic ' + mailGunAuthorization,
+    },
+    body: urlfy(userdata),
+  }
+
+  // Send the request
+  const response = await fetch(addMemberURL, bodyoptions)
+  return response
+}
+
 async function handleMailingListSignupRequest(request) {
 
   try
@@ -83,11 +111,6 @@ async function handleMailingListSignupRequest(request) {
           listsToSubscribeTo.push(entry[1]);
         }
       }
-
-      // Toggle subscribed
-      bodydata['subscribed'] = true
-      // Update user if present
-      bodydata['upsert'] = true
 
       // Validate the submitted data
       if (!validateFormData(bodydata)) {
@@ -110,18 +133,8 @@ async function handleMailingListSignupRequest(request) {
         return new Response('reCAPTCHA failed', { status: 400, headers:corsHeaders })
       }
 
-      // At this point, we passed the captcha and we have valid entries
-      let bodyoptions = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "Content-Length": bodydata.length,
-          'Authorization': 'Basic ' + mailGunAuthorization,
-        },
-        body: urlfy(bodydata),
-      }
-
       for( var i = 0; i < listsToSubscribeTo.length; i++ ) {
+        // Identify the correct mailing list endpoint
         var mailgunListName = "";
         switch( listsToSubscribeTo[i] ) {
           case "signup-general":
@@ -131,11 +144,10 @@ async function handleMailingListSignupRequest(request) {
             mailgunListName = "speakers_corner"
             break;
           default:
-            return new Response(listsToSubscribeTo[i] + "cannot be subscribed to via this URL", {status:403, headers:corsHeaders})
+            return new Response("The list " + listsToSubscribeTo[i] + " cannot be subscribed to.", {status:400, headers:corsHeaders})
         }
 
-        var addMemberURL = MAILGUN_API_URL + '/lists/' + mailgunListName + '@' + DOMAIN + '/members'
-        const response = await fetch(addMemberURL, bodyoptions)
+        const response = subscribeToMailingList(mailgunListName, bodydata['name'], bodydata['address'])
 
         if( response.status != 200 ) {
           return new Response("Error while signing up for " + listsToSubscribeTo[i], {status:response.status, headers:corsHeaders})
