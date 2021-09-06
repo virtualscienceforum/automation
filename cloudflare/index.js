@@ -4,11 +4,6 @@ const MAILGUN_API_URL = "https://api.eu.mailgun.net/v3"
 const USER = 'api';
 const DOMAIN = 'mail.virtualscienceforum.org'
 const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
-
-// const MAILGUNAPIKEY = ""
-// const RECAPTCHASECRET = ""
-// const ZOOMAPIKEY = ""
-// const ZOOMAPISECRET = ""
 const mailGunAuthorization = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
 const corsHeaders = {
