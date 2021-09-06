@@ -31,5 +31,5 @@ jobs:
         env:
           MAILGUNAPIKEY: ${{ secrets.MAILGUN_API_KEY }}
           RECAPTCHASECRET: ${{ secrets.RECAPTCHA_SECRET_KEY }}
-          ZOOMAPIKEY: ${{ ZOOM_API_KEY }}
-          ZOOMAPISECRET: ${{ ZOOM_API_SECRET }}
+          ZOOMAPIKEY: ${{ secrets.ZOOM_API_KEY }}
+          ZOOMAPISECRET: ${{ secrets.ZOOM_API_SECRET }}
