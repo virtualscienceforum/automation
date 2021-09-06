@@ -5,11 +5,10 @@ const USER = 'api';
 const DOMAIN = 'mail.virtualscienceforum.org'
 const SEND_MAIL_URL = MAILGUN_API_URL + '/' + DOMAIN + '/messages'
 
-const MAILGUNAPIKEY = ""
-const RECAPTCHASITEKEY = ""
-const RECAPTCHASECRET = ""
-const ZOOMAPIKEY = ""
-const ZOOMAPISECRET = ""
+// const MAILGUNAPIKEY = ""
+// const RECAPTCHASECRET = ""
+// const ZOOMAPIKEY = ""
+// const ZOOMAPISECRET = ""
 const mailGunAuthorization = Buffer.from(USER + ':' + MAILGUNAPIKEY).toString('base64');
 
 const corsHeaders = {
@@ -43,7 +42,6 @@ function validateRegistrationFormData(bodydata)
   if (!bodydata) return false
   if (!bodydata.firstname) return false
   if (!bodydata.lastname) return false
-  if (!(bodydata.address === bodydata.addressconfirm)) return false
 
   return true
 }
