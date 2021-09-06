@@ -226,7 +226,7 @@ async function handleZoomRegistrationRequest(request) {
     // Add to mailing list!
     const username = bodydata["firstname"] + " " + bodydata["lastname"]
     const useremail = bodydata["address"]
-    const eventtype = bodydate["eventType"]
+    const eventtype = bodydata["eventType"]
 
     var mailgunListName = "";
     switch( eventtype ) {
