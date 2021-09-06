@@ -165,8 +165,16 @@ async function handleZoomRegistrationRequest(request) {
   {
     const formData = await request.formData()
     const bodydata = {}
+    var signupForMailingList = 0;
+
     for (const entry of formData.entries()) {
       bodydata[entry[0]] = entry[1]
+
+      console.log("New bodydata: " + entry[0] + " = " + entry[1])
+
+      // Are we also signing up for the mailing list?
+      if( entry[0] === "contact-checkbox" )
+        signupForMailingList = 1;
     }
 
     // Validate the submitted data
@@ -191,7 +199,6 @@ async function handleZoomRegistrationRequest(request) {
     }
 
     // At this point, we passed the captcha and we have valid entries
-
     const payload = {}
     payload["first_name"] = bodydata["firstname"]
     payload["last_name"] = bodydata["lastname"]
@@ -209,11 +216,10 @@ async function handleZoomRegistrationRequest(request) {
     let requestbody = {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Content-Length": payload.length,
-        'Authorization': 'Bearer {' + token + '}'
+        "Content-Type": "application/json",
+        'Authorization': 'Bearer '+token
       },
-      body: urlfy(payload),
+      body: JSON.stringify(payload),
     }
 
     // Send to Zoom
@@ -221,27 +227,42 @@ async function handleZoomRegistrationRequest(request) {
     var registerURL = 'https://api.zoom.us/v2/meetings/' + meetingId + '/registrants'
     const response = await fetch(registerURL, requestbody)
 
-    // If we get here, we managed to register
-
-    // Add to mailing list!
-    const username = bodydata["firstname"] + " " + bodydata["lastname"]
-    const useremail = bodydata["address"]
-    const eventtype = bodydata["eventType"]
-
-    var mailgunListName = "";
-    switch( eventtype ) {
-      case "lrc":
-        mailgunListName = "vsf-announce"
-        break;
-      case "speakers_corner":
-        mailgunListName = "speakers_corner"
-        break;
-      default:
-        return new Response("Unable to sign up to the the mailing list " + eventtype + ". Please report this to the VSF.", {status:400, headers:corsHeaders})
+    if( response.status != 201 ) {
+      var error = await response.text();
+      return new Response("Could not register: " + error, {status:response.status, headers:corsHeaders})
     }
-    const result = subscribeToMailingList(mailgunListName, username, useremail)
 
-    return new Response("Succesfully registered. You will receive a confirmation email.", {status:200, headers:corsHeaders})
+    // If we get here, we managed to register. The confirmation email will be
+    // sent automatically through Zoom.
+
+    // Add to mailing list?
+    var notificationMessage = "";
+    if( signupForMailingList == 1 ) {
+      const username = bodydata["firstname"] + " " + bodydata["lastname"]
+      const useremail = bodydata["address"]
+      const eventtype = bodydata["eventType"]
+
+      // Check if mailinglist signup was checked
+      var mailgunListName = "";
+      switch( eventtype ) {
+        case "lrc":
+          console.log("LRC")
+          mailgunListName = "vsf-announce"
+          break;
+        case "speakers_corner":
+          mailgunListName = "speakers_corner"
+          break;
+        default:
+          notificationMessage = "We were unfortunately unable to sign you up for the mailing list \"" + eventtype + "\". Please report this to the VSF."
+          break;
+      }
+
+      if( notificationMessage === "" ) {
+        const mailinglistresponse = await subscribeToMailingList(mailgunListName, username, useremail)
+      }
+    }
+
+    return new Response("Thank you for registering! You will receive a confirmation email." + "\n" + notificationMessage, {status:200, headers:corsHeaders})
   }
   catch (err)
   {
