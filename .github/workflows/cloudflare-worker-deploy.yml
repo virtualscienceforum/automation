@@ -24,6 +24,12 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_WORKER_API_TOKEN }}
           secrets: |
             MAILGUNAPIKEY
+            RECAPTCHASECRET
+            ZOOMAPIKEY
+            ZOOMAPISECRET
           
         env:
           MAILGUNAPIKEY: ${{ secrets.MAILGUN_API_KEY }}
+          RECAPTCHASECRET: ${{ secrets.RECAPTCHA_SECRET_KEY }}
+          ZOOMAPIKEY: ${{ ZOOM_API_KEY }}
+          ZOOMAPISECRET: ${{ ZOOM_API_SECRET }}
