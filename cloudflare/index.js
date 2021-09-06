@@ -237,7 +237,7 @@ async function handleZoomRegistrationRequest(request) {
         mailgunListName = "speakers_corner"
         break;
       default:
-        return new Response("The list " + eventtype + " cannot be subscribed to.", {status:400, headers:corsHeaders})
+        return new Response("Unable to sign up to the the mailing list " + eventtype + ". Please report this to the VSF.", {status:400, headers:corsHeaders})
     }
     const result = subscribeToMailingList(mailgunListName, username, useremail)
 
