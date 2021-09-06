@@ -166,11 +166,14 @@ async function handleZoomRegistrationRequest(request) {
     const formData = await request.formData()
     const bodydata = {}
     var signupForMailingList = 0;
+    var agreeToInstructions = 0;
 
     for (const entry of formData.entries()) {
       bodydata[entry[0]] = entry[1]
 
-      console.log("New bodydata: " + entry[0] + " = " + entry[1])
+      // Did we agree to the instructions?
+      if( entry[0] === "instructions-checkbox" )
+        agreeToInstructions = 1;
 
       // Are we also signing up for the mailing list?
       if( entry[0] === "contact-checkbox" )
@@ -205,9 +208,17 @@ async function handleZoomRegistrationRequest(request) {
     payload["email"] = bodydata["address"]
     payload["org"] = bodydata["affiliation"]
     payload["custom_questions"] = [{
-      "title": "Please confirm you agree to follow the participant instructions: http://virtualscienceforum.org/#/attendeeguide",
-      "value": "Yes",
-      }]
+        "title": "Please confirm you agree to follow the participant instructions: http://virtualscienceforum.org/#/attendeeguide",
+        "value": (agreeToInstructions == 1) ? "Yes" : "No",
+      },
+      {
+        "title": "How did you hear about the Virtual Science Forum?",
+        "value": bodydata['howdidyouhear'],
+      },
+      {
+        "title": "May we contact you about future Virtual Science Forum events?",
+        "value": (signupForMailingList==1) ? "Yes" : "No",
+      }];
     payload["auto_approve"] = 1
 
     var jwt = require('jsonwebtoken');
@@ -246,7 +257,6 @@ async function handleZoomRegistrationRequest(request) {
       var mailgunListName = "";
       switch( eventtype ) {
         case "lrc":
-          console.log("LRC")
           mailgunListName = "vsf-announce"
           break;
         case "speakers_corner":
