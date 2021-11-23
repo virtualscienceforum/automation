@@ -196,7 +196,7 @@ def intervals_from_issue(issue):
     for comment in issue.get_comments().reversed:
         if (
             issue.user != comment.user
-            and not issue.repository.has_in_collaborators(user)
+            and not issue.repository.has_in_collaborators(comment.user)
         ):
             # Must be either speaker or VSF member
             continue
