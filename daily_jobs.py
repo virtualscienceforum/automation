@@ -27,7 +27,10 @@ After you've done that, please reply in your
 [application issue](https://github.com/virtualscienceforum/virtualscienceforum/issues/{{workflow_issue}})
 with the following phrase:
 
-"I approve publishing of the recording. Talk start is HH:MM:SS, talk end is HH:MM:SS."
+"I approve publishing of the recording. Start is HH:MM:SS, end is HH:MM:SS."
+
+If you want to cut a part from the middle of the talk, specify more intervals to keep using the same format
+(so "Start HH:MM:SS, end HH:MM:SS, start HH:MM:SS, end HH:MM:SS").
 
 Naturally, you may download and use the video for your own purposes.
 
