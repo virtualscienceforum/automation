@@ -2,6 +2,7 @@
 from typing import List
 from subprocess import check_call
 import os
+import sys
 from pathlib import Path
 import json
 import logging
@@ -178,21 +179,36 @@ def parse_duration(time_string):
 
 
 def intervals_from_issue(issue):
-    approval_regex = re.compile(
-        r".*(?:i|speaker) approves? publishing(?: of)? the recording.*start(?: is)?\s+"
-        r"(?P<start>\d\d:\d\d:\d\d).*end(?: is)?\s+(?P<end>\d\d:\d\d:\d\d).*",
+    interval_regex = re.compile(
+        (
+            r"start(?: is)?\s+(\d\d:\d\d:\d\d).*?"
+            r"end(?: is)?\s+(\d\d:\d\d:\d\d)"
+        ),
         flags=(re.MULTILINE | re.DOTALL)
     )
-    return next(
-        [[parse_duration(match["start"]), parse_duration(match["end"])]]
-        for comment in issue.get_comments().reversed
-        if (
-            match := approval_regex.match(comment.body.lower())
-        ) and (
-            issue.user == comment.user
-            or issue.repository.has_in_collaborators(comment.user)
-        )
+
+    approval_regex = re.compile(
+        r"(?:i|speaker) approves? publishing(?: of)? the recording",
+        flags=(re.MULTILINE | re.DOTALL)
     )
+
+    # Go over all the comments in reverse in case something was posted twice
+    for comment in issue.get_comments().reversed:
+        if (
+            issue.user != comment.user
+            and not issue.repository.has_in_collaborators(user)
+        ):
+            # Must be either speaker or VSF member
+            continue
+
+        body = comment.body.lower()
+        if approval_regex.search(body) is None:
+            continue
+
+        return [
+            [parse_duration(match[0]), parse_duration(match[1])]
+            for match in interval_regex.findall(body)
+        ]
 
 
 playlists = {
@@ -209,17 +225,23 @@ if __name__ == "__main__":
     repo = common.vsf_repo()
     issue = repo.get_issue(int(os.environ["ISSUE_NUMBER"]))
     logger.info(f"Parsing issue {issue.number}")
-    intervals = intervals_from_issue(issue)
+    if (intervals := intervals_from_issue(issue)) is None:
+        sys.exit("Invalid publication request")
     talks, _ = common.talks_data(repo=repo)
     talk = next(
         talk for talk in talks if talk["workflow_issue"] == issue.number
     )
-    logger.info(f"Downloading the video.")
+    logger.info("Downloading the video.")
     meeting_id = talk["zoom_meeting_id"]
     download_video(talk["zoom_meeting_id"])
 
-    logger.info(f"Trimming.")
-    trim(f"{meeting_id}.mp4", intervals, f"{meeting_id}_trimmed.mp4")
+    if intervals:
+        logger.info(f"Trimming with intervals {intervals}.")
+        upload_fname = f"{meeting_id}_trimmed.mp4"
+        trim(f"{meeting_id}.mp4", intervals, upload_fname)
+    else:
+        # Uploading the complete video
+        upload_fname = f"{meeting_id}.mp4"
 
     logger.info(f"Uploading the video.")
     title = f"“{talk['title']}” by {talk['speaker_name']}"[:100]
@@ -238,7 +260,7 @@ if __name__ == "__main__":
     )[:1000]
 
     talk["youtube_id"] = upload(
-        f"{meeting_id}_trimmed.mp4",
+        upload_fname,
         sanitize_for_youtube(title),
         sanitize_for_youtube(abstract),
         playlist_id=playlists[talk["event_type"]],
