@@ -173,6 +173,9 @@ if __name__ == "__main__":
         ):
             continue
 
+        if "zoom_meeting_id" not in talk:
+            continue
+
         # Email speakers' corner speakers a video link for approval.
         if talk["event_type"] == "speakers_corner":
             with exceptions:
