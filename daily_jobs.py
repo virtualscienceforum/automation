@@ -169,7 +169,7 @@ if __name__ == "__main__":
     for talk in talks:
         # Select the talks from yesterday
         if not(
-            datetime.timedelta(days=1) > today - talk["time"] > datetime.timedelta()
+            datetime.timedelta(days=1) >= today - talk["time"] > datetime.timedelta()
         ):
             continue
 
