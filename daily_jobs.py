@@ -160,7 +160,7 @@ if __name__ == "__main__":
         talk["time"] = talk["time"].replace(tzinfo=pytz.UTC)
 
     # Weekly emails sent on Sundays
-    if now.weekday() == 6:
+    if now.weekday() == 0:
         with exceptions:
             weekly_speakers_corner_update(talks)
             logging.info(f"Sent a weekly Speakers' corner announcement")
