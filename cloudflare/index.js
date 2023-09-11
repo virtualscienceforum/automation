@@ -221,8 +221,12 @@ async function handleZoomRegistrationRequest(request) {
       }];
     payload["auto_approve"] = 1
 
-    var jwt = require('jsonwebtoken');
-    var token = jwt.sign({ iss: ZOOMAPIKEY }, ZOOMAPISECRET, { algorithm: 'HS256', expiresIn: '1h' });
+    var token = await fetch('https://zoom.us/oauth/token?grant_type=client_credentials', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(ZOOMCLIENTID + ':' + ZOOMCLIENTSECRET).toString('base64')
+      }
+    }).then(response => response.json()).then(data => data.access_token);
 
     let requestbody = {
       method: "POST",

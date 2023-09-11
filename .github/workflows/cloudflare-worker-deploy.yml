@@ -25,11 +25,13 @@ jobs:
           secrets: |
             MAILGUNAPIKEY
             RECAPTCHASECRET
-            ZOOMAPIKEY
-            ZOOMAPISECRET
-          
+            ZOOMACCOUNTID
+            ZOOMCLIENTID
+            ZOOMCLIENTSECRET
+
         env:
           MAILGUNAPIKEY: ${{ secrets.MAILGUN_API_KEY }}
           RECAPTCHASECRET: ${{ secrets.RECAPTCHA_SECRET_KEY }}
-          ZOOMAPIKEY: ${{ secrets.ZOOM_API_KEY }}
-          ZOOMAPISECRET: ${{ secrets.ZOOM_API_SECRET }}
+          ZOOMACCOUNTID: ${{ secrets.ZOOM_ACCOUNT_ID }}
+          ZOOMCLIENTID: ${{ secrets.ZOOM_CLIENT_ID }}
+          ZOOMCLIENTSECRET: ${{ secrets.ZOOM_CLIENT_SECRET }}
