@@ -58,7 +58,8 @@ def wait_until(minute):
 
 
 def make_zoom_headers() -> callable:
-    expiration = time()  # Always ask for a new token at the first call
+    expiration = time()
+    token = None
 
     def zoom_headers() -> dict:
         zoom_account_id = os.getenv("ZOOM_ACCOUNT_ID")
@@ -66,7 +67,8 @@ def make_zoom_headers() -> callable:
         zoom_client_secret = os.getenv("ZOOM_CLIENT_SECRET")
 
         nonlocal expiration
-        if time() > expiration:
+        nonlocal token
+        if time() > expiration or token is None:
             # Get a new token
             response = requests.post(
                 "https://zoom.us/oauth/token",
