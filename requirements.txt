@@ -1,8 +1,7 @@
 requests
 pytz
 python-dateutil
-PyJWT>=2.0.0
-git+https://github.com/PyGithub/PyGithub.git
+PyGithub
 PyYAML
 ruamel.yaml
 Jinja2

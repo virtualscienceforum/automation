@@ -1,11 +1,9 @@
-from functools import lru_cache
 import os
 from time import time
 import json
 from io import StringIO
 import markdown
 
-import jwt
 import requests
 import github
 import datetime
@@ -59,22 +57,28 @@ def wait_until(minute):
     sleep((desired - now).total_seconds())
 
 
-def make_zoom_headers(duration: float=100) -> callable:
-    expiration = time() + duration
+def make_zoom_headers() -> callable:
+    expiration = time()  # Always ask for a new token at the first call
 
     def zoom_headers() -> dict:
-        zoom_api_key = os.getenv("ZOOM_API_KEY")
-        zoom_api_secret = os.getenv("ZOOM_API_SECRET")
+        zoom_account_id = os.getenv("ZOOM_ACCOUNT_ID")
+        zoom_client_id = os.getenv("ZOOM_CLIENT_ID")
+        zoom_client_secret = os.getenv("ZOOM_CLIENT_SECRET")
 
         nonlocal expiration
         if time() > expiration:
-            expiration = time() + duration
-        token = jwt.encode(
-            # Create a payload of the token containing API Key & expiration time
-            {"iss": zoom_api_key, "exp": expiration},
-            zoom_api_secret,
-            algorithm='HS256'
-        )
+            # Get a new token
+            response = requests.post(
+                "https://zoom.us/oauth/token",
+                data={
+                    "grant_type": "client_credentials",
+                    "account_id": zoom_account_id,
+                },
+                auth=(zoom_client_id, zoom_client_secret)
+            )
+            response.raise_for_status()
+            token = response.json()["access_token"]
+            expiration = time() + response.json()["expires_in"]
 
         return {'authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
