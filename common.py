@@ -71,7 +71,7 @@ def make_zoom_headers() -> callable:
             response = requests.post(
                 "https://zoom.us/oauth/token",
                 data={
-                    "grant_type": "client_credentials",
+                    "grant_type": "account_credentials",
                     "account_id": zoom_account_id,
                 },
                 auth=(zoom_client_id, zoom_client_secret)
@@ -116,8 +116,7 @@ def talks_data(ref="master", repo=None):
 def zoom_request(method: callable, *args, **kwargs):
     """A minimal wrapper around requests for querying zoom API with error handling"""
     response = method(*args, **kwargs, headers=zoom_headers())
-    if response.status_code > 299:
-        raise RuntimeError(response.content.decode())
+    response.raise_for_status()
 
     if response.content:
         return response.json()

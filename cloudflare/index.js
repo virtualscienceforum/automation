@@ -221,7 +221,7 @@ async function handleZoomRegistrationRequest(request) {
       }];
     payload["auto_approve"] = 1
 
-    var token = await fetch('https://zoom.us/oauth/token?grant_type=client_credentials&account_id=' + ZOOMACCOUNTID,
+    var token = await fetch('https://zoom.us/oauth/token?grant_type=account_credentials&account_id=' + ZOOMACCOUNTID,
     {
       method: 'POST',
       headers: {
