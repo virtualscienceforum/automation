@@ -28,7 +28,9 @@ def download_video(zoom_meeting_id):
     files = requests.get(
         f"https://api.zoom.us/v2/meetings/{zoom_meeting_id}/recordings",
         headers=common.zoom_headers()
-    ).json()["recording_files"]
+    )
+    files.raise_for_status()
+    files = files.json()["recording_files"]
     try:
         video_recording, = (
             file for file in files
@@ -243,7 +245,7 @@ if __name__ == "__main__":
         # Uploading the complete video
         upload_fname = f"{meeting_id}.mp4"
 
-    logger.info(f"Uploading the video.")
+    logger.info("Uploading the video.")
     title = f"“{talk['title']}” by {talk['speaker_name']}"[:100]
     abstract = (
         (
